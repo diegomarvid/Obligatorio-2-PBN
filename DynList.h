@@ -18,5 +18,14 @@ typedef struct DynList {
 
 } DynList;
 
+DynList *dynList_crear(void);
+
+Nodo *agregar_nodo(DynList *dynlist, int data);
+
+void print_dynlist(DynList *dynlist);
+
+int eliminar_nodo(DynList *dynlist, int dato);
+
+
 
 #endif

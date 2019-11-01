@@ -1,12 +1,12 @@
 #ifndef RP_H
 #define RP_H
 
-int conectarConsola(void);
+//int conectarConsola(void);
 
-Mensaje convertirMensaje();
+//Mensaje convertirMensaje();
 
-int enviar_tarea(Mensaje *mensaje); //Enviar informacion formateada a MM
+//int enviar_tarea(Mensaje *mensaje); //Enviar informacion formateada a MM
 
-char[] devolver_mensaje(void); //Devolver mensaje formateado a consola
+//char[] devolver_mensaje(void); //Devolver mensaje formateado a consola
 
 #endif

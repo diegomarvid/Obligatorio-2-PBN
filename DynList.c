@@ -5,7 +5,7 @@
 
 
 
-DynList *dynList_crear(Nodo *head) {
+DynList *dynList_crear(void) {
 
     DynList *dynlist;
 
@@ -14,7 +14,7 @@ DynList *dynList_crear(Nodo *head) {
     if(dynlist == NULL) {
         return NULL;
     } else {
-        dynlist->head = head;
+        dynlist->head = NULL;
         dynlist->size = 0;
         return dynlist;
     }
@@ -51,7 +51,7 @@ Nodo *agregar_nodo(DynList *dynlist, int data){
 
     Nodo *actual = dynlist->head;
     Nodo *aux;
-//Busco el proximoe spacio libre.
+    //Busco el proximo espacio libre.
     do
     {
         aux = actual;
@@ -60,7 +60,7 @@ Nodo *agregar_nodo(DynList *dynlist, int data){
 
     } while (actual != NULL);
 
-//creo un nodo nuevo el la ultima posicion.
+    //creo un nodo nuevo el la ultima posicion.
 
     Nodo *nuevo = (Nodo*)malloc(sizeof(Nodo));
 
@@ -155,26 +155,35 @@ int eliminar_nodo(DynList *dynlist, int dato){
 }
 
 
-int main(int argc, char const *argv[])
-{
+// int main(int argc, char const *argv[])
+// {
 
-    DynList *din = dynList_crear(NULL);
-    int dato;
+//     DynList *din = dynList_crear();
+//     int dato;
    
-    while (1)
-    {
+//     while (1)
+//     {
         
+//         printf ("ingrese un numero prro: \n");
+//         scanf("%d", &dato);
+//         agregar_nodo(din,dato);
+//         print_dynlist(din);
 
-        printf ("ingrese un numero prro a eliminar prro: \n");
-        scanf("%d", &dato);
-        eliminar_nodo(din,dato);
-        print_dynlist(din);
+//         printf ("ingrese un numero prro: \n");
+//         scanf("%d", &dato);
+//         agregar_nodo(din,dato);
+//         print_dynlist(din);
+
+//         printf ("ingrese un numero prro a eliminar prro: \n");
+//         scanf("%d", &dato);
+//         eliminar_nodo(din,dato);
+//         print_dynlist(din);
        
-    }
+//     }
     
 
-    return 0;
-}
+//     return 0;
+// }
 
 
 

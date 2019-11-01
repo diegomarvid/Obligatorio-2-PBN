@@ -35,6 +35,6 @@ typedef struct {
 
 enum { INVALIDO , EJECUTANDO , SUSPENDIDO , ELIMINAR , TERMINADO };
 
-enum { FALLO, EXITO };
+enum { FALLO = - 1 , EXITO };
 
 #endif
