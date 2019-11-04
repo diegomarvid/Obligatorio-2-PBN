@@ -97,7 +97,7 @@ pid_t crear_Rp(void) {
 
 int main(int argc, char const *argv[])
 {
-
+    
     sigChildSet();
 
     lista_Rp = dynList_crear();
@@ -135,7 +135,7 @@ int main(int argc, char const *argv[])
         actual = actual->next;
     }
 
-    //R QUEDA ESPERANDO ASI MANAGEA LA MUERTE DE SUS HIJOS
+    //R QUEDA ESPERANDO ASI MANEJA LA MUERTE DE SUS HIJOS
      while(1) {
          
      } 

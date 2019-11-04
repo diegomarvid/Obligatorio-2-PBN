@@ -8,7 +8,7 @@ volatile sig_atomic_t done = FALSE;
 volatile sig_atomic_t porcentaje = 0;
 
 void sigTermHandler(int signum, siginfo_t *info, void *ucontext ) {
-
+    
     while(porcentaje <= 100) {
         printf("[%d] Finalizando %d %%\n", getpid(), porcentaje);
         usleep(500 * 1000);
