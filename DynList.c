@@ -84,6 +84,15 @@ Nodo *agregar_nodo(DynList *dynlist, int data){
 
 }
 
+
+// void map_dynlist(void (*f)(Nodo *nodo)){
+//     Nodo *current = dynlist->head;
+// 	while (current != NULL) {
+// 		f(current);
+// 		current = current->next;
+// 	}
+// }
+
 void print_dynlist(DynList *dynlist)
 {
 	Nodo *current = dynlist->head;

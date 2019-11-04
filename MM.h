@@ -1,13 +1,13 @@
 #ifndef MM_H
 #define MM_H
 
-PID crear_proceso(char[] comando, PID rid);
+pid_t crear_proceso(char comando[], PID rid);
 
-PID eliminar_proceso(PID pid, int *shm);
+pid_t eliminar_proceso(PID pid, int *shm);
 
-PID suspender_proceso(PID pid, int *shm);
+pid_t suspender_proceso(PID pid, int *shm);
 
-PID renaudar_proceso(PID pid, int *shm);
+pid_t renaudar_proceso(PID pid, int *shm);
 
 int obtener_estado(PID pid, int *shm);
 
