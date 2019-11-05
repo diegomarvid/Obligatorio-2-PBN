@@ -1,13 +1,36 @@
-output: R.o Rp.o MM.o
+all: consola R Rp MM PM
+
+consola:
+	gcc consola.o -o consola
+
+R: R.o 
+	gcc R.o -o R
+
+Rp: Rp.o 
+	gcc Rp.o -o Rp
+
+MM: MM.o
+	gcc MM.o -o MM
+
+PM: PM.o
+	gcc PM.o -o PM
 	
+
+consola.o: consola.c
+	gcc -Wall -c consola.c
+
 R.o: R.c 
-	gcc -Wall R.c -o R
+	gcc -Wall -c R.c 
 
 Rp.o: Rp.c
-	gcc -Wall Rp.c -o Rp
+	gcc -Wall -c Rp.c
 
 MM.o: MM.c
-	gcc -Wall MM.c -o MM	
+	gcc -Wall -c MM.c
+
+PM.o: PM.c constantes.h
+	gcc -Wall -c PM.c
+
 
 clean:
 	rm *.o

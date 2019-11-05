@@ -97,7 +97,7 @@ pid_t crear_Rp(void) {
 
 int main(int argc, char const *argv[])
 {
-    
+
     sigChildSet();
 
     lista_Rp = dynList_crear();
@@ -124,16 +124,20 @@ int main(int argc, char const *argv[])
     }
 
     //TIEMPO MUERTO
-    sleep(3);
+    // sleep(3);
 
-    //CERRAR PROCESOS
-    actual = lista_Rp->head;
+    // //CERRAR PROCESOS
+    // actual = lista_Rp->head;
 
-    while(actual != NULL){       
-        cerrar_proceso(actual->data);
-        sleep(1);
-        actual = actual->next;
-    }
+    // while(actual != NULL){       
+    //     cerrar_proceso(actual->data);
+    //     sleep(1);
+    //     actual = actual->next;
+    // }
+
+ 
+
+    //printf("Ret: %d \n", ret);
 
     //R QUEDA ESPERANDO ASI MANEJA LA MUERTE DE SUS HIJOS
      while(1) {

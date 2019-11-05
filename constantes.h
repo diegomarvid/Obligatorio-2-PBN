@@ -7,6 +7,7 @@ enum { FALSE , TRUE };
 
 #define CMD_SIZE 20
 #define MSG_SIZE 100
+#define PROCESS_MAX 10
 
 typedef struct {
 
@@ -36,5 +37,7 @@ typedef struct {
 enum { INVALIDO , EJECUTANDO , SUSPENDIDO , ELIMINAR , TERMINADO };
 
 enum { FALLO = - 1 , EXITO };
+
+#define INEXISTENTE 32512
 
 #endif
