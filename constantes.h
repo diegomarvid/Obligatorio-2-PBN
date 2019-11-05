@@ -9,6 +9,8 @@ enum { FALSE , TRUE };
 #define MSG_SIZE 100
 #define PROCESS_MAX 10
 
+#define MYERR(status, txt) error_at_line(status, errno, __FILE__, __LINE__ - 1, txt)
+
 typedef struct {
 
     PID RID;
