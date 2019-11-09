@@ -128,7 +128,7 @@ int main(int argc, char const *argv[])
             MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion \n");
 
         } else {
-        
+            
             pid_t rp_pid = crear_Rp(sock_Rp);
 
         }

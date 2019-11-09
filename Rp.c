@@ -32,10 +32,14 @@ int main(int argc, char const *argv[])
         //Envio mensaje de bienvenida
         if (recv(rdsocket, mensaje, BUFFSIZE, 0) == -1)
         {
+            close(rdsocket);
+        
             MYERR(EXIT_FAILURE, "Error en el recv \n");
         }
 
         printf("[Rp] Recibe: %s \n", mensaje);
+        
+        sleep(1);
 
         if (send(rdsocket, string, strlen(string) + 1, MSG_NOSIGNAL) == -1)
         {
@@ -47,11 +51,9 @@ int main(int argc, char const *argv[])
 
         printf("[Rp] Manda: %s \n", string);
        
+       
 
    }
-
-
-        close(rdsocket);
 
 
     return 0;

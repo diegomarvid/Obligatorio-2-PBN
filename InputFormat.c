@@ -2,22 +2,24 @@
 #include <stdlib.h> 
 #include <sys/types.h>
 #include <string.h>
+#include "InputFormat.h"
 
 #define MAX_LENGTH 21
-//#define s_(x) #x
-//#define s(x) s_(x)
 
-
-int clean_stdin()
+//Funcion encargada de limiar la standard input.
+int clean_stdin(void)
 {
     while (getchar()!='\n');
     return 1;
 }
 
+
 //Lee y retorna un PID.
-pid_t readPID(){
+//readPID(mensaje a imprimir al pedir PID).
+
+pid_t readPID( char msg[] ){
     
-	int PID =0;  
+	int PID = 0;  
     	
 	int r;
 
@@ -25,26 +27,29 @@ pid_t readPID(){
     
 	do
         {  
-       		printf("Ingrese un PID, numero mayor a 0:\n");
-        
-		r=scanf("%9d%c",&PID,&enter);
-	
-		if(r==0 || enter !='\n' || PID<=0){
 
-     		    printf("Error, la entrada no posee un formato valido.\n");
+       	printf( "%s. Recuerde que un PID numero mayor a 0.\n" , msg );
+        
+		r = scanf( "%9d%c" , &PID , &enter );
+	
+		if( r == 0 || enter != '\n' || PID <= 0 ){
+
+     		    printf("Error, la entrada no posee un formato de PID valido.\n");
 
 		}
 
 
-   	} while (((r!=2 || enter!='\n') && clean_stdin()) || PID<=0);
+   	} while ( ( ( r != 2 || enter != '\n' ) && clean_stdin() ) || PID <= 0 );
 
 
-	printf("Entrada exitosa, el PID es %d\n",PID);
+	printf("Entrada exitosa, el PID ingresado es: %d.\n",PID);
 
 	return  (pid_t) PID; 
 }
 
-//Lee y retorna un int.
+
+//Lee y retorna un int entre un rango deseado.
+
 int readInt( int min , int max ){
  
     	
@@ -62,7 +67,7 @@ int readInt( int min , int max ){
 	
 			if( r == 0 || enter != '\n' || num < min || num > max ){
 
-     		    printf("Error, la entrada no posee un formato valido.\n");
+     		    printf("Error, la entrada no posee un formato valido o no esta dentro del rango habilitado.\n");
 
 			}
 
@@ -70,85 +75,62 @@ int readInt( int min , int max ){
    	} while ( ( (r != 2 || enter != '\n') && clean_stdin() ) || num < min || num > max);
 
 
-	//printf("Entrada exitosa, el PID es %d\n",num);
-
 	return num; 
 
 }
 
-//Lee y retorna un array
-char * readCMD(){
+
+//Lee y retorna un string.
+
+char * readCMD(void){
 	
 	static char cmd[MAX_LENGTH];
 
-	char * r;
+	int lenght;
 
-    printf("Ingrese un comando:\n");
+	int esmaslargo;
+
+	char* r;
 
 	do{
-		
-		r=fgets( cmd , MAX_LENGTH , stdin);
-		
-        if( r == NULL ){
 
-            printf("El texto ingresado no posee el largo necesario.");
+		esmaslargo=0;
 
-       }else
-        {
-            
-            cmd[strcspn(cmd,"\n")];
+		printf("Ingrese un comando a ejecutar:\n");
 
-        }
-        
+		r=fgets (cmd, MAX_LENGTH, stdin);
 
-	}while(r==NULL);
+		if(r==NULL)	{
 
-	printf("%s",cmd);
+		printf("Error de lectura");
+
+		}else{
+
+			lenght=strlen(cmd);
+
+
+			if ( (lenght == (MAX_LENGTH-1) ) && cmd[lenght-1] != '\n'	){
+
+				printf("El comando es mas largo de lo esperada.\n");
+
+				esmaslargo=1;
+
+				clean_stdin();
+
+			}else if (lenght==1){
+
+				printf("La entrada vacia no es un comando valido.\n");
+
+				//getchar()
+			}
+
+		}
+
+	}while( r == NULL || esmaslargo || lenght == 1);
+
+	//printf("%s\n",cmd);
+	cmd[strcspn(cmd,"\n")]=0;
 
 	return cmd;
 }
 
-
-
-// //Lee y retorna un int.
-// int readIP(){
- 
-    	
-// 	int r;
-	
-// 	int num1;
-//     int num2;
-//     int num3;
-//     int num4;
-
-// 	char enter;
-    
-// 	do
-//         {  
-//        		printf( "Ingrese su IP:\n");
-        
-// 			r=scanf("%3d.%3d.%3d.%3d%c", &num1, &num2, &num3, &num4 , &enter);
-	
-// 			if( r == 0 || enter != '\n'){
-
-//      		    printf("Error, la entrada no posee un formato valido.\n");
-
-// 			}
-
-
-//    	} while ( ( (r != 5 || enter != '\n') && clean_stdin() ));
-
-
-// 	printf("Entrada exitosa, la IP es %d.%d.%d.%d\n", num1, num2, num3, num4);
-
-// 	return num1; 
-
-// }
-
-int main(void)  
-{ 
-
-	printf("%d",readIP());
-
-    return 0;  
-}
