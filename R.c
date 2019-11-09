@@ -1,9 +1,15 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <error.h>
+#include <errno.h>
 #include "DynList.c"
+#include "constantes.h"
 #include "R.h"
+#include "sock.c"
 
 
 DynList *lista_Rp;
@@ -71,21 +77,29 @@ void sigChildSet() {
 }
 
 
-pid_t crear_Rp(void) {
+pid_t crear_Rp(int sockfd) {
+    
     
     pid_t pid = fork();
 
     if(pid < 0) {
         printf("Error al hacer fork \n");
+
+        close(sockfd);
+
     } else if(pid > 0){
      
-        kill(pid, SIGSTOP); //Te pause perra
         printf("Creacion de R' exitosa, PID: %d \n", pid);
         agregar_nodo(lista_Rp, pid);
         
 
     } else {
-        execlp("./Rp", "Rp" ,NULL);
+
+        char sock_RpStr[10];
+
+        sprintf(sock_RpStr, "%d", sockfd);
+
+        execlp("./Rp", "Rp" , sock_RpStr, NULL);
         printf("Error \n");
     }
 
@@ -102,47 +116,68 @@ int main(int argc, char const *argv[])
 
     lista_Rp = dynList_crear();
 
-    //CREAR R PRIMA
-    for(int i = 0; i < 3; i++) {
-        pid_t pid = crear_Rp();
-        printf("[%d] Proceso Pausado \n", pid);
-        sleep(1);
+    int socket = sock_listen(PORT); 
+
+    while(1){
+
+
+        int sock_Rp = sock_open(socket);
+
+        if (sock_Rp < 0){
+
+            MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion \n");
+
+        } else {
+        
+            pid_t rp_pid = crear_Rp(sock_Rp);
+
+        }
+
     }
 
-    printf("\n");
 
-    //TIEMPO MUERTO
-    sleep(3);
 
-    //RENAUDAR PROCESOS
-    Nodo *actual = lista_Rp->head;
-    
-    while(actual != NULL){   
-        kill(actual->data, SIGCONT);
-        printf("[%d] Proceso Renaudado \n", actual->data);
-        actual = actual->next;
-    }
+    // //CREAR R PRIMA
+    // for(int i = 0; i < 3; i++) {
+    //     pid_t pid = crear_Rp();
+    //     printf("[%d] Proceso Pausado \n", pid);
+    //     sleep(1);
+    // }
 
-    //TIEMPO MUERTO
+    // printf("\n");
+
+    // //TIEMPO MUERTO
     // sleep(3);
 
-    // //CERRAR PROCESOS
-    // actual = lista_Rp->head;
-
-    // while(actual != NULL){       
-    //     cerrar_proceso(actual->data);
-    //     sleep(1);
+    // //RENAUDAR PROCESOS
+    // Nodo *actual = lista_Rp->head;
+    
+    // while(actual != NULL){   
+    //     kill(actual->data, SIGCONT);
+    //     printf("[%d] Proceso Renaudado \n", actual->data);
     //     actual = actual->next;
     // }
 
+    // //TIEMPO MUERTO
+    // // sleep(3);
+
+    // // //CERRAR PROCESOS
+    // // actual = lista_Rp->head;
+
+    // // while(actual != NULL){       
+    // //     cerrar_proceso(actual->data);
+    // //     sleep(1);
+    // //     actual = actual->next;
+    // // }
+
  
 
-    //printf("Ret: %d \n", ret);
+    // //printf("Ret: %d \n", ret);
 
-    //R QUEDA ESPERANDO ASI MANEJA LA MUERTE DE SUS HIJOS
-     while(1) {
+    // //R QUEDA ESPERANDO ASI MANEJA LA MUERTE DE SUS HIJOS
+    //  while(1) {
          
-     } 
+    //  } 
 
     return 0;
 }
