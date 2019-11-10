@@ -20,7 +20,7 @@ int main(int argc, char const *argv[])
 
     char string[BUFFSIZE] = "Mensaje del servidor papu";
 
-    printf("Se creo un socket entre en el puerto: %d \n", PORT);
+    printf("[Rp] Se creo un socket entre en el puerto: %d \n", PORT);
 
     int rdsocket = atoi(argv[1]);
 
@@ -30,11 +30,18 @@ int main(int argc, char const *argv[])
         //int rdsocket = sock_open(socket);
 
         //Envio mensaje de bienvenida
-        if (recv(rdsocket, mensaje, BUFFSIZE, 0) <= 0)
+        int read = recv(rdsocket, mensaje, BUFFSIZE, 0);
+
+        if (read < 0)
         {
             close(rdsocket);
         
-            MYERR(EXIT_FAILURE, "Error en el recv \n");
+            MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
+        } else if(read == 0) {
+
+            close(rdsocket);
+
+            MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
         }
 
         printf("[Rp] Recibe: %s \n", mensaje);
@@ -46,7 +53,7 @@ int main(int argc, char const *argv[])
             
             close(rdsocket);
 
-            MYERR(EXIT_FAILURE, "Error en el send \n");
+            MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
         }
 
         printf("[Rp] Manda: %s \n", string);

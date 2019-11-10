@@ -28,7 +28,7 @@ int realizar_opcion(int opcion){
 	
 		case 1:
 
-			printf("%d", readPID("Perrassssssssss"));
+			printf("%d",readPID("Perrassssssssss"));
 			break;
 
 		case 2:
@@ -72,10 +72,7 @@ int realizar_opcion(int opcion){
 
 void sigIntHandler(int signum, siginfo_t *info, void *ucontext ) {
 
-    printf("Cerrando consola... \n");
-
-	
-	exit(EXIT_SUCCESS);
+    printf("Cerrando consola... \n", pid);    
 }
 
 void sigIntSet() {
@@ -121,7 +118,7 @@ int main(int argc,char *argv[]){
 
 
 		// int socket = sock_connect(txt_ip, ipport);
-		int socket = sock_connect(SERVERHOST, PORT);
+		socket = sock_connect(SERVERHOST, PORT);
 		printf("socket:%d\n",socket);
 
 	//}while (socket == 1);	
@@ -140,16 +137,16 @@ int main(int argc,char *argv[]){
 				//realizar_opcion(opcion);
 
 				if(send(socket, mensaje, (strlen(mensaje) + 1), MSG_NOSIGNAL) < 0) {
-    				MYERR(EXIT_FAILURE, "[C] Error en el send \n");
+    				MYERR(EXIT_FAILURE, "Error en el send \n");
 				}
 
-				printf("[C] Manda: %s \n", mensaje);
+				printf("[Consola] Manda: %s \n", mensaje);
 
 				if(recv(socket, mensaje, BUFFSIZE, 0) < 0) {
-   					MYERR(EXIT_FAILURE, "[C] Error en el recv \n");
+   					MYERR(EXIT_FAILURE, "Error en el recv \n");
 				}
 
-				printf("[C] Recibe: %s \n", mensaje);	
+				printf("[Consola] Recibe: %s \n", mensaje);	
 
 				}
 			

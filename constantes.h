@@ -13,11 +13,11 @@ enum { FALSE , TRUE };
 
 typedef struct {
 
-    PID RID;
+    pid_t RID;
 
     int op;
 
-    int size;
+    // int size;
 
     char data[MSG_SIZE]; 
 
@@ -25,11 +25,11 @@ typedef struct {
 
 typedef struct {
 
-    PID RID;
+    pid_t RID;
 
     int estado;
 
-    PID pid;
+    pid_t pid;
 
     char cmd[CMD_SIZE];
 

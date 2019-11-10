@@ -2,5 +2,4 @@
 #define CONSOLA_H
 
 
-
 #endif
