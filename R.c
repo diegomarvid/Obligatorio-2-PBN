@@ -57,9 +57,12 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
 
     pid = waitpid(-1, &status, 0);
 
+
+
     eliminar_nodo(lista_Rp, pid);
 
     printf("[%d] Proceso Terminado \n", pid);    
+
   
 
 }
@@ -77,7 +80,7 @@ void sigChildSet() {
 }
 
 
-pid_t crear_Rp(int sockfd) {
+pid_t crear_Rp(int sockfd, int socket) {
     
     
     pid_t pid = fork();
@@ -91,6 +94,7 @@ pid_t crear_Rp(int sockfd) {
      
         printf("Creacion de R' exitosa, PID: %d \n", pid);
         agregar_nodo(lista_Rp, pid);
+        close(sockfd);
         
 
     } else {
@@ -98,6 +102,8 @@ pid_t crear_Rp(int sockfd) {
         char sock_RpStr[10];
 
         sprintf(sock_RpStr, "%d", sockfd);
+
+        close(socket);
 
         execlp("./Rp", "Rp" , sock_RpStr, NULL);
         printf("Error \n");
@@ -129,7 +135,7 @@ int main(int argc, char const *argv[])
 
         } else {
             
-            pid_t rp_pid = crear_Rp(sock_Rp);
+            pid_t rp_pid = crear_Rp(sock_Rp,socket);
 
         }
 

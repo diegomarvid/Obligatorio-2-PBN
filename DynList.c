@@ -95,7 +95,9 @@ Nodo *agregar_nodo(DynList *dynlist, int data){
 
 void print_dynlist(DynList *dynlist)
 {
-	Nodo *current = dynlist->head;
+	printf("\n");
+
+    Nodo *current = dynlist->head;
 
 	while (current != NULL) {
 
@@ -103,6 +105,8 @@ void print_dynlist(DynList *dynlist)
 		current = current->next;
 	}
 
+    printf("EL tamaño es: %d \n", dynlist->size);
+    
     printf("\n");
 }
 
@@ -135,7 +139,11 @@ int eliminar_nodo(DynList *dynlist, int dato){
         
         dynlist->head = actual->next;
 
+        dynlist->size--;
+
         free(actual);
+
+
 
         return EXITO;
 
@@ -145,6 +153,8 @@ int eliminar_nodo(DynList *dynlist, int dato){
 
         aux->next = NULL;
 
+        dynlist->size--;
+
         free(actual);
 
         return EXITO;
@@ -153,6 +163,8 @@ int eliminar_nodo(DynList *dynlist, int dato){
     {
         
         aux->next = actual->next;
+
+        dynlist->size--;
 
         free(actual);
 
@@ -187,7 +199,17 @@ int eliminar_nodo(DynList *dynlist, int dato){
 //         scanf("%d", &dato);
 //         eliminar_nodo(din,dato);
 //         print_dynlist(din);
+
+//         printf ("ingrese un numero prro a eliminar prro: \n");
+//         scanf("%d", &dato);
+//         eliminar_nodo(din,dato);
+//         print_dynlist(din);
        
+       
+//         printf ("ingrese un numero prro: \n");
+//         scanf("%d", &dato);
+//         agregar_nodo(din,dato);
+//         print_dynlist(din);
 //     }
     
 

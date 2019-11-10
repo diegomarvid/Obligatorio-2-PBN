@@ -106,19 +106,24 @@ int main(int argc,char *argv[]){
 
 				opcion = readInt(1,7);
 
-				realizar_opcion(opcion);
+
+				if (opcion!=7){
+
+				//realizar_opcion(opcion);
 
 				if(send(socket, mensaje, (strlen(mensaje) + 1), MSG_NOSIGNAL) < 0) {
-    			MYERR(EXIT_SUCCESS, "Error en el send \n");
+    			MYERR(EXIT_FAILURE, "Error en el send \n");
 				}
 
 				printf("[Consola] Manda: %s \n", mensaje);
 
 				if(recv(socket, mensaje, BUFFSIZE, 0) < 0) {
-   				 MYERR(EXIT_SUCCESS, "Error en el recv \n");
+   				 MYERR(EXIT_FAILURE, "Error en el recv \n");
 				}
 
-			printf("[Consola] Recibe: %s \n", mensaje);	
+				printf("[Consola] Recibe: %s \n", mensaje);	
+
+				}
 			
 			}while ( opcion != 7 );
 			

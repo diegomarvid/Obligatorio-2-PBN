@@ -30,7 +30,7 @@ int main(int argc, char const *argv[])
         //int rdsocket = sock_open(socket);
 
         //Envio mensaje de bienvenida
-        if (recv(rdsocket, mensaje, BUFFSIZE, 0) == -1)
+        if (recv(rdsocket, mensaje, BUFFSIZE, 0) <= 0)
         {
             close(rdsocket);
         
@@ -41,7 +41,7 @@ int main(int argc, char const *argv[])
         
         sleep(1);
 
-        if (send(rdsocket, string, strlen(string) + 1, MSG_NOSIGNAL) == -1)
+        if (send(rdsocket, string, strlen(string) + 1, MSG_NOSIGNAL) <= 0)
         {
             
             close(rdsocket);

@@ -55,13 +55,22 @@ int sock_open(int sock) {
     struct sockaddr addr;
     socklen_t length = sizeof(struct sockaddr);
 
-    printf("\n");
+    int rdsocket;
 
-    printf("Waiting on accept() \n");
+    do{
 
-    printf("\n");
+        printf("\n");
 
-    int rdsocket = accept(sock, &addr, &length);
+        printf("Waiting on accept() \n");
+
+        printf("\n");
+
+        rdsocket = accept(sock, &addr, &length);
+        
+
+    }while(errno==EINTR && rdsocket < 0);
+
+
     if(rdsocket < 0) {
         perror("No pude conectar el servidor");
     }
