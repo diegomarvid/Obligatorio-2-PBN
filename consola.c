@@ -22,46 +22,74 @@ void desplegar_menu(){
 }
 
 
-int crear_mensaje(int opcion, char cmd[]){
+int crear_mensaje(int opcion, char msg[]){
 
+	char cmd[CMD_SIZE];
+	int PID;
 
 
 	switch (opcion){
 	
 		case 1:
+
 			readCMD(cmd);
+
+			sprintf(msg, "%d-%s", opcion, cmd);
+
 			break;
 
 		case 2:
-			printf("Opcion seleccionada: eliminar proceso.\n");
 
-			printf("%d",readInt(1,8));
+			PID = readPID("Ingrese el pid del proceso a eliminar.");
+
+			sprintf(cmd,"%d",PID);
+
+			sprintf(msg, "%d-%s", opcion, cmd);
 
 			break;
 		case 3:
-			printf("Opcion seleccionada: suspender proceso.\n");
 
-			//printf("%s",readCMD());
+			PID = readPID("Ingrese el pid del proceso a suspender.");
+
+			sprintf(cmd,"%d",PID);
+
+			sprintf(msg, "%d-%s", opcion, cmd);
 
 			break;
 		case 4:
-			printf("Opcion seleccionada: reanudar proceso.\n");
+			
+			PID = readPID("Ingrese el pid del proceso a reanudar.");
+
+			sprintf(cmd,"%d",PID);
+
+			sprintf(msg, "%d-%s", opcion, cmd);
 
 			break;
 		case 5:
-			printf("Opcion seleccionada: ver estado de proceso.\n");
+
+			PID = readPID("Ingrese el pid del proceso a ver estado.");
+
+			sprintf(cmd,"%d",PID);
+
+			sprintf(msg, "%d-%s", opcion, cmd);
 
 			break;
 		case 6:
-			printf("Opcion seleccionada: crear proceso.\n");
+
+			strcpy(cmd , "Listar procesos.");
+
+			sprintf(msg, "%d-%s", opcion, cmd);
 
 			break;
-		case 7:
-			printf("Opcion seleccionada: crear proceso.\n");
+		case 8:
+
+			strcpy(cmd , "Eliminar sistema.");
+
+			sprintf(msg, "%d-%s", opcion, cmd);
 
 			break;
 		default:	
-			printf("Error, ingreso fallido.");
+			printf("Error, ingreso erroeneo.");
 	
 	}
 
@@ -123,7 +151,7 @@ int main(int argc,char *argv[]){
 	char txt_ip[16];
 	char mensaje[BUFFSIZE];
 	char respuesta[BUFFSIZE];
-	char cmd[CMD_SIZE];
+	//char cmd[CMD_SIZE];
 	
 	//do{
 
@@ -153,9 +181,7 @@ int main(int argc,char *argv[]){
 				if (opcion != 7)
 				{
 
-					crear_mensaje(opcion, cmd);
-
-					sprintf(mensaje, "%d-%s", opcion, cmd);
+					crear_mensaje(opcion, mensaje);
 
 					transimitir_mensaje(socket, mensaje, respuesta);
 
