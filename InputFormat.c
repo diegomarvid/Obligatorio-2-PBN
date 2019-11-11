@@ -3,8 +3,8 @@
 #include <sys/types.h>
 #include <string.h>
 #include "InputFormat.h"
+#include "constantes.h"
 
-#define MAX_LENGTH 21
 
 //Funcion encargada de limiar la standard input.
 int clean_stdin(void)
@@ -32,7 +32,7 @@ pid_t readPID( char msg[] ){
         
 		r = scanf( "%9d%c" , &PID , &enter );
 	
-		if( r == 0 || enter != '\n' || PID <= 0 ){
+		if( r != 2 || enter != '\n' || PID <= 0 ){
 
      		    printf("Error, la entrada no posee un formato de PID valido.\n");
 
@@ -82,13 +82,13 @@ int readInt( int min , int max ){
 
 //Lee y retorna un string.
 
-char * readCMD(void){
+void readCMD(char cmd[]){
 	
-	static char cmd[MAX_LENGTH];
+	//static char cmd[CMD_SIZE];
 
 	int lenght;
 
-	int esmaslargo;
+	int esmaslargo = FALSE;
 
 	char* r;
 
@@ -98,26 +98,26 @@ char * readCMD(void){
 
 		printf("Ingrese un comando a ejecutar:\n");
 
-		r=fgets (cmd, MAX_LENGTH, stdin);
+		r = fgets (cmd, CMD_SIZE, stdin);
 
-		if(r==NULL)	{
+		if (r == NULL)	{
 
-		printf("Error de lectura");
+			printf("Error de lectura \n");
 
 		}else{
 
-			lenght=strlen(cmd);
+			lenght = strlen(cmd);
 
 
-			if ( (lenght == (MAX_LENGTH-1) ) && cmd[lenght-1] != '\n'	){
+			if ( (lenght == (CMD_SIZE-1) ) && cmd[lenght-1] != '\n'	){
 
-				printf("El comando es mas largo de lo esperada.\n");
+				printf("El comando es mas largo de lo esperado.\n");
 
-				esmaslargo=1;
+				esmaslargo = TRUE;
 
 				clean_stdin();
 
-			}else if (lenght==1){
+			}else if (lenght == 1){
 
 				printf("La entrada vacia no es un comando valido.\n");
 
@@ -126,11 +126,11 @@ char * readCMD(void){
 
 		}
 
-	}while( r == NULL || esmaslargo || lenght == 1);
+	}while( r == NULL || esmaslargo == TRUE || lenght == 1);
 
 	//printf("%s\n",cmd);
-	cmd[strcspn(cmd,"\n")]=0;
+	cmd[strcspn(cmd,"\n")] = 0;
 
-	return cmd;
+	
 }
 

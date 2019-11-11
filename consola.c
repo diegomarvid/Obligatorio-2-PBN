@@ -22,13 +22,14 @@ void desplegar_menu(){
 }
 
 
-int realizar_opcion(int opcion){
+int crear_mensaje(int opcion, char cmd[]){
+
+
 
 	switch (opcion){
 	
 		case 1:
-
-			printf("%d", readPID("Perrassssssssss"));
+			readCMD(cmd);
 			break;
 
 		case 2:
@@ -40,7 +41,7 @@ int realizar_opcion(int opcion){
 		case 3:
 			printf("Opcion seleccionada: suspender proceso.\n");
 
-			printf("%s",readCMD());
+			//printf("%s",readCMD());
 
 			break;
 		case 4:
@@ -63,6 +64,8 @@ int realizar_opcion(int opcion){
 			printf("Error, ingreso fallido.");
 	
 	}
+
+	
 
 	return 0;
 
@@ -91,7 +94,22 @@ void sigIntSet() {
 }
 
 
+void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 
+	if (send(sockfd, mensaje, (strlen(mensaje) + 1), MSG_NOSIGNAL) < 0)
+	{
+		MYERR(EXIT_FAILURE, "[C] Error en el send \n");
+	}
+
+	printf("[C] Manda: %s \n", mensaje);
+
+	if (recv(sockfd, respuesta, BUFFSIZE, 0) < 0)
+	{
+		MYERR(EXIT_FAILURE, "[C] Error en el recv \n");
+	}
+
+	printf("[C] Recibe: %s \n", respuesta); 
+}
 
 
 
@@ -103,7 +121,9 @@ int main(int argc,char *argv[]){
 	int opcion = 7;
 	unsigned int ip[4], ipport;
 	char txt_ip[16];
-	char mensaje[BUFFSIZE] = "Hola que tal";
+	char mensaje[BUFFSIZE];
+	char respuesta[BUFFSIZE];
+	char cmd[CMD_SIZE];
 	
 	//do{
 
@@ -123,37 +143,25 @@ int main(int argc,char *argv[]){
 		// int socket = sock_connect(txt_ip, ipport);
 		int socket = sock_connect(SERVERHOST, PORT);
 		printf("socket:%d\n",socket);
-
-	//}while (socket == 1);	
-
-
-			
+		
 			do{
 
 				desplegar_menu();
 
-				opcion = readInt(1,7);
+				opcion = readInt(1,8);
 
+				if (opcion != 7)
+				{
 
-				if (opcion!=7){
+					crear_mensaje(opcion, cmd);
 
-				//realizar_opcion(opcion);
+					sprintf(mensaje, "%d-%s", opcion, cmd);
 
-				if(send(socket, mensaje, (strlen(mensaje) + 1), MSG_NOSIGNAL) < 0) {
-    				MYERR(EXIT_FAILURE, "[C] Error en el send \n");
-				}
-
-				printf("[C] Manda: %s \n", mensaje);
-
-				if(recv(socket, mensaje, BUFFSIZE, 0) < 0) {
-   					MYERR(EXIT_FAILURE, "[C] Error en el recv \n");
-				}
-
-				printf("[C] Recibe: %s \n", mensaje);	
+					transimitir_mensaje(socket, mensaje, respuesta);
 
 				}
-			
-			}while ( opcion != 7 );
+
+			} while ( opcion != 7 );
 			
 			close(socket);
 			

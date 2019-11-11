@@ -18,6 +18,9 @@ int main(int argc, char const *argv[])
 
     char mensaje[BUFFSIZE];
 
+    int op;
+    char cmd[CMD_SIZE];
+
     char string[BUFFSIZE] = "Mensaje del servidor papu";
 
     printf("[Rp] Se creo un socket entre en el puerto: %d \n", PORT);
@@ -44,7 +47,12 @@ int main(int argc, char const *argv[])
             MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
         }
 
+        sscanf(mensaje, "%d-%[^\n]s", &op, cmd);
+
         printf("[Rp] Recibe: %s \n", mensaje);
+
+        printf("Op: %d \n", op);
+        printf("Cmd: %s \n", cmd);
         
         sleep(1);
 

@@ -7,6 +7,6 @@ pid_t readPID(char msg[]);
 
 int readInt( int min , int max );
 
-char * readCMD(void);
+void readCMD(char cmd[]);
 
 #endif
