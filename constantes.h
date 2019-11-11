@@ -19,7 +19,7 @@ typedef struct {
 
     // int size;
 
-    char data[MSG_SIZE]; 
+    char data[CMD_SIZE]; 
 
 } Mensaje;
 
