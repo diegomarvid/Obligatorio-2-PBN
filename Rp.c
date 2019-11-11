@@ -14,7 +14,7 @@ void conv_to_struct(Mensaje *mensaje, char buffer[]){
     int op;
     char data[CMD_SIZE];
 
-    if(sscanf(buffer, "%d-%s", &op, data) == 0) {
+    if(sscanf(buffer, "%d-%[^\n]s", &op, data) == 0) {
         MYERR(EXIT_FAILURE, "Error en la conversion a mensaje");
     }
 
@@ -33,9 +33,6 @@ int main(int argc, char const *argv[])
     //int socket = sock_listen(PORT);
 
     char buffer[BUFFSIZE];
-
-    int op;
-    char cmd[CMD_SIZE];
 
     char string[BUFFSIZE] = "Mensaje del servidor papu";
 

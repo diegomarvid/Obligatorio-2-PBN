@@ -24,7 +24,8 @@ void desplegar_menu(){
 
 int crear_mensaje(int opcion, char msg[]){
 
-	char cmd[CMD_SIZE];
+	//Informacion sobre la operacion a realizar
+	char data[CMD_SIZE];
 	int PID;
 
 
@@ -32,9 +33,9 @@ int crear_mensaje(int opcion, char msg[]){
 	
 		case 1:
 
-			readCMD(cmd);
+			readCMD(data);
 
-			sprintf(msg, "%d-%s", opcion, cmd);
+			sprintf(msg, "%d-%s", opcion, data);
 
 			break;
 
@@ -42,50 +43,50 @@ int crear_mensaje(int opcion, char msg[]){
 
 			PID = readPID("Ingrese el pid del proceso a eliminar.");
 
-			sprintf(cmd,"%d",PID);
+			sprintf(data,"%d",PID);
 
-			sprintf(msg, "%d-%s", opcion, cmd);
+			sprintf(msg, "%d-%s", opcion, data);
 
 			break;
 		case 3:
 
 			PID = readPID("Ingrese el pid del proceso a suspender.");
 
-			sprintf(cmd,"%d",PID);
+			sprintf(data,"%d",PID);
 
-			sprintf(msg, "%d-%s", opcion, cmd);
+			sprintf(msg, "%d-%s", opcion, data);
 
 			break;
 		case 4:
 			
 			PID = readPID("Ingrese el pid del proceso a reanudar.");
 
-			sprintf(cmd,"%d",PID);
+			sprintf(data,"%d",PID);
 
-			sprintf(msg, "%d-%s", opcion, cmd);
+			sprintf(msg, "%d-%s", opcion, data);
 
 			break;
 		case 5:
 
 			PID = readPID("Ingrese el pid del proceso a ver estado.");
 
-			sprintf(cmd,"%d",PID);
+			sprintf(data,"%d",PID);
 
-			sprintf(msg, "%d-%s", opcion, cmd);
+			sprintf(msg, "%d-%s", opcion, data);
 
 			break;
 		case 6:
 
-			strcpy(cmd , "Listar procesos.");
+			strcpy(data , "Listar procesos.");
 
-			sprintf(msg, "%d-%s", opcion, cmd);
+			sprintf(msg, "%d-%s", opcion, data);
 
 			break;
 		case 8:
 
-			strcpy(cmd , "Eliminar sistema.");
+			strcpy(data , "Eliminar sistema.");
 
-			sprintf(msg, "%d-%s", opcion, cmd);
+			sprintf(msg, "%d-%s", opcion, data);
 
 			break;
 		default:	

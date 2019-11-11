@@ -179,6 +179,12 @@ void ejecutar_procesos() {
 
             p = lista_proceso[i];
 
+            // if(p.estado == CREAR) {
+            //     if(crear_proceso_pausado(p.pid, p.cmd) == FALLO) {
+            //         MYERR(EXIT_SUCCESS, "Error al crear proceso");
+            //     }
+            // }
+
             if(p.estado == EJECUTANDO) {
                 kill(p.pid, SIGCONT);
                 usleep(500 * 1000);

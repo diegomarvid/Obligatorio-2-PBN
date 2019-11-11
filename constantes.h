@@ -5,7 +5,7 @@ typedef int PID;
 
 enum { FALSE , TRUE };
 
-#define CMD_SIZE 20
+#define CMD_SIZE 40
 #define MSG_SIZE 100
 #define PROCESS_MAX 10
 
@@ -36,10 +36,8 @@ typedef struct {
 
 } Proceso;
 
-enum { INVALIDO , EJECUTANDO , SUSPENDIDO , ELIMINAR , TERMINADO };
+enum { INVALIDO , EJECUTANDO , SUSPENDIDO , ELIMINAR , TERMINADO, CREAR };
 
 enum { FALLO = - 1 , EXITO };
-
-#define INEXISTENTE 32512
 
 #endif
