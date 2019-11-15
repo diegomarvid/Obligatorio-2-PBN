@@ -122,12 +122,12 @@ int main(int argc, char const *argv[])
 
     lista_Rp = dynList_crear();
 
-    int socket = sock_listen(PORT); 
+    int socket = sock_listen_in(PORT); 
 
     while(1){
 
 
-        int sock_Rp = sock_open(socket);
+        int sock_Rp = sock_open_in(socket);
 
         if (sock_Rp < 0){
 

@@ -170,7 +170,7 @@ int main(int argc,char *argv[]){
 
 
 		// int socket = sock_connect(txt_ip, ipport);
-		int socket = sock_connect(SERVERHOST, PORT);
+		int socket = sock_connect_in(SERVERHOST, PORT);
 		printf("socket:%d\n",socket);
 		
 			do{
