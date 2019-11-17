@@ -183,11 +183,17 @@ void ejecutar_procesos() {
             //     if(crear_proceso_pausado(p.pid, p.cmd) == FALLO) {
             //         MYERR(EXIT_SUCCESS, "Error al crear proceso");
             //     }
+
+
             // }
+
+
 
             if(p.estado == EJECUTANDO) {
                 kill(p.pid, SIGCONT);
-                usleep(500 * 1000);
+                if(sleep(1) != 0) {
+                    //Manejo de error
+                }
                 kill(p.pid, SIGSTOP);
             }
 
@@ -242,9 +248,9 @@ pid_t crear_proceso_pausado(char *comando[], char cmd[]) {
      
     } else {
 
-        kill(pid, SIGSTOP);
+        //kill(pid, SIGSTOP);
 
-        if(agregar_proceso(getpid(), pid, EJECUTANDO, cmd) == -1){
+        if(agregar_proceso(0, pid, EJECUTANDO, cmd) == -1){
             printf("Error en espacio de memoria \n");
         }    
 

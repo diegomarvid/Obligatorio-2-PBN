@@ -7,7 +7,7 @@
 #include <errno.h>
 #include "sock.h"
 
-#define MAX_CLIENTS 1
+#define MAX_CLIENTS 20
 #define PORT 3045
 #define SERVERHOST "127.0.0.1"
 #define SOCKET_NAME "/tmp/PBN"
@@ -15,27 +15,31 @@
 
 int sock_listen_un (){
 
-    int sock;
+    int connection_socket;
 
     struct sockaddr_un name;
 
     /* Create socket */
 
-    sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    connection_socket = socket(AF_UNIX, SOCK_STREAM, 0);
 
-    if(sock < 0) {
+    if(connection_socket < 0) {
 
         perror("socket");
         exit(EXIT_FAILURE);
 
     }
 
+    printf("Master socket filed descriptor created \n");
+
+    memset(&name, 0, sizeof(struct sockaddr_un));
+
     name.sun_family = AF_UNIX;
 
     strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
 
      /* Do the binding */
-    if(bind(sock, (struct sockaddr *) &name, sizeof(name)) < 0){
+    if(bind(connection_socket, (const struct sockaddr *) &name, sizeof(name)) < 0){
 
         perror("bind");
 
@@ -45,7 +49,7 @@ int sock_listen_un (){
 
     printf("bind() successfull \n");
 
-    if(listen(sock, MAX_CLIENTS) < 0) {
+    if(listen(connection_socket, MAX_CLIENTS) < 0) {
 
         perror("listen");
 
@@ -53,7 +57,7 @@ int sock_listen_un (){
     }
 
 
-    return sock;
+    return connection_socket;
 
 }
 
@@ -98,7 +102,35 @@ int sock_listen_in(uint16_t port){
 
 }
 
+int sock_open_un(int connection_socket) {
 
+int rdsocket;
+
+    do{
+
+        printf("\n");
+
+        printf("Waiting on accept() \n");
+
+        printf("\n");
+
+        rdsocket = accept(connection_socket, NULL, NULL);
+        
+
+    }while(errno == EINTR && rdsocket < 0);
+
+
+    if(rdsocket < 0) {
+        perror("No pude conectar el servidor");
+    }
+
+    printf("Connection accepted from client\n");
+
+    printf("\n");
+
+    return rdsocket;
+
+}
 
 int sock_open_in(int sock) {
 
@@ -131,8 +163,46 @@ int sock_open_in(int sock) {
     printf("\n");
 
     return rdsocket;
+}
+
+
+int sock_connect_un() {
+
+    int sock;
+
+        struct sockaddr_un addr;
+
+        /* Create the socket */
+        sock = socket(AF_UNIX, SOCK_STREAM, 0);
+
+        if(sock < 0) {
+
+            perror("socket");
+            exit(EXIT_FAILURE);
+
+        }
+
+        memset(&addr, 0, sizeof(struct sockaddr_un));
+
+        /* Connect socket to socket address */
+
+        addr.sun_family = AF_UNIX;
+        strncpy(addr.sun_path, SOCKET_NAME, sizeof(addr.sun_path) - 1);
+
+           /* Do connect */
+        if(connect(sock, (const struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1) {
+
+            perror("connect (client)");
+            exit(EXIT_FAILURE);
+
+        }
+
+    printf("Connected to the server \n");
+
+    return sock;
 
 }
+
 
 int sock_connect_in(char *address, uint16_t port) {
 

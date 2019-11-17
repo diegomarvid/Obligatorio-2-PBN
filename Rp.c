@@ -38,44 +38,107 @@ int main(int argc, char const *argv[])
 
     printf("[Rp] Se creo un socket entre en el puerto: %d \n", PORT);
 
-    int rdsocket = atoi(argv[1]);
+    int consola_socket = atoi(argv[1]);
+
     Mensaje mensaje = {getpid(), -1, ""};
+
+    int mm_socket;
+
+    mm_socket = sock_connect_un();
+
+    if( mm_socket < 0 ){
+
+        MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");
+
+    }
+
+    printf("Connection established with MM \n");
+    
+
+    //  if (send(MMsocket, string, strlen(string) + 1, MSG_NOSIGNAL) <= 0)
+    //     {
+            
+    //         close(rdsocket);
+
+    //         MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
+    //     }
+
 
     while(1) {
         
+
+        //*********RECIBE CONSOLA********//
         
-        int read = recv(rdsocket, buffer, BUFFSIZE, 0);
+        int read = recv(consola_socket, buffer, BUFFSIZE, 0);
 
         if (read < 0)
         {
-            close(rdsocket);
+            close(consola_socket);
         
             MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
+
         } else if(read == 0) {
 
-            close(rdsocket);
+            close(consola_socket);
 
             MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
         }
-   
-        //Convierto string de consola en estructura mensaje
-        //para poder comunicar con el sistema de forma eficiente
+
+        printf("[Rp] Recibe de consola: %s \n", buffer);
+
+        //CONVIERTO A ESTRUCTURA INTERNA DEL SERVIDOR
+     
         conv_to_struct(&mensaje, buffer);
 
-        printf("Op: %d \n", mensaje.op);
-        printf("Data: %s \n", mensaje.data);
+        
         
         sleep(1);
 
-        if (send(rdsocket, string, strlen(string) + 1, MSG_NOSIGNAL) <= 0)
+        //*********MANDA A MM***********//
+
+        if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0)
         {
             
-            close(rdsocket);
+            close(mm_socket);
+
+            MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
+        }     
+
+        printf("[Rp]->[MM] Manda mensaje \n");
+        printf("Op: %d \n", mensaje.op);
+        printf("Data: %s \n", mensaje.data);
+
+        //*********RECIBE DE MM***********//
+
+        read = recv(mm_socket, buffer, BUFFSIZE, 0);
+
+        if (read < 0)
+        {
+            close(mm_socket);
+        
+            MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
+
+        } else if(read == 0) {
+
+            close(mm_socket);
+
+            MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
+        }
+
+        printf("[Rp] Recibe de MM: %s \n", buffer);
+
+        //*********MANDA A Consola***********//
+
+        if (send(consola_socket, buffer, strlen(buffer) + 1, MSG_NOSIGNAL) <= 0)
+        {
+            
+            close(consola_socket);
 
             MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
         }
 
-        printf("[Rp] Manda: %s \n", string);
+        printf("[Rp]->[C] Manda: %s \n", buffer);
+
        
        
 
