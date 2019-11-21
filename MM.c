@@ -2,14 +2,17 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
-#include "sock.c"
-#include "constantes.h"
-#include "MM.h"
 #include <error.h>
 #include <errno.h>
+#include "constantes.h"
+#include "MM.h"
+#include "sock.c"
+#include "shm.c"
+
 
 
 int monitored_fd_set[MAX_CLIENTS];
+Proceso *lista_proceso;
 
 
 /*Remove all the FDs, if any, from the the array*/
@@ -125,6 +128,98 @@ refresh_fd_set(fd_set *fd_set_ptr){
     }
 }
 
+//*******SHM CODE********//
+
+int request_process_space() {
+
+    Proceso p;
+    int i;
+
+    for(i = 0; i < PROCESS_MAX; i++) {
+        p = lista_proceso[i];
+        if(p.estado == TERMINADO){
+            return i;
+        }
+    }
+
+    return FALLO;
+
+}
+
+int agregar_proceso(char cmd[]){
+    
+    int indice = request_process_space();
+
+    if(indice != FALLO) {
+
+        lista_proceso[indice].pid = INVALIDO;
+        lista_proceso[indice].estado = CREAR;
+        strcpy(lista_proceso[indice].cmd, cmd);
+
+        return indice;
+
+    } else{
+
+        return FALLO;
+    }
+    
+
+
+}
+
+int cambiar_estado_proceso(pid_t pid, int estado) {
+
+    Proceso p;
+    int i;
+    
+    for(i = 0; i < PROCESS_MAX; i++) {
+
+        p = lista_proceso[i];
+
+        if(p.estado != TERMINADO) {
+            if(p.pid == pid) {
+                lista_proceso[i].estado = estado;
+                return EXITO;
+            }
+        }
+        
+    }
+
+    return FALLO;
+
+}
+
+
+
+void ejecutar_operacion(Mensaje mensaje) {
+
+
+    //Crear proceso
+    if(mensaje.op == 1) {
+        if(agregar_proceso(mensaje.data) == FALLO) {
+            printf("Error al agregar proceso \n");
+        }
+    }
+    if(mensaje.op == 2) {
+        int pid;
+        sscanf(mensaje.data, "%d", &pid);
+        cambiar_estado_proceso(pid, TERMINADO);
+    }
+    if(mensaje.op == 3) {
+        int pid;
+        sscanf(mensaje.data, "%d", &pid);
+        cambiar_estado_proceso(pid, SUSPENDIDO);
+    }
+    if(mensaje.op == 4) {
+        int pid;
+        sscanf(mensaje.data, "%d", &pid);
+        cambiar_estado_proceso(pid, EJECUTANDO);
+    }
+
+
+
+}
+
 
 
 int main(int argc, char const *argv[]){
@@ -136,6 +231,8 @@ int main(int argc, char const *argv[]){
     int socket_actual = -1;
     char buffer[BUFFSIZE] = "Soy mm chota grande";
     Mensaje mensaje;
+
+    lista_proceso = obtener_shm(0);
 
     intitiaze_monitor_fd_set();
 
@@ -159,6 +256,7 @@ int main(int argc, char const *argv[]){
         refresh_fd_set(&readfds);
 
         printf("Waiting on select sys call \n");
+
 
         select(get_max_fd() + 1, &readfds, NULL, NULL, NULL);
 
@@ -190,21 +288,32 @@ int main(int argc, char const *argv[]){
 
                     int read = recv(socket_actual, &mensaje, sizeof(mensaje), 0);
 
+                    if(read <= 0) {
+
+                        remove_from_monitored_fd_set(socket_actual);
+                        close(socket_actual);
+
+                    } else {
+
+                        ejecutar_operacion(mensaje);
+
+                        printf("[MM] recibe de Rp: \n");
+                        printf("Op: %d \n", mensaje.op);
+                        printf("Data: %s \n", mensaje.data);
+
+                        //Procesamiento
+
+                        //Envio respuesta a Rp
+
+                        send(socket_actual, buffer, strlen(buffer) + 1, MSG_NOSIGNAL);
+
+                        printf("[MM]manda: %s\n", buffer);
+
+                    }
+
                     
-
-                    printf("[MM] recibe de Rp: \n");
-                    printf("Op: %d \n", mensaje.op);
-                    printf("Data: %s \n", mensaje.data);
-
-                    //Procesamiento
-
-                    //Envio respuesta a Rp
-
-                    send(socket_actual, buffer, strlen(buffer) + 1, MSG_NOSIGNAL);
-
-                    printf("[MM]manda: %s\n", buffer);
             
-                    remove_from_monitored_fd_set(socket_actual);
+                    //remove_from_monitored_fd_set(socket_actual);
 
                 }
 

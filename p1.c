@@ -7,7 +7,7 @@ int main(int argc, char const *argv[])
 {
     int i;
 
-    for(i = 0; i < 4; i++) {
+    for(i = 0; i < 15; i++) {
         printf("[%d] %d \n", getpid(), i);
         sleep(1);
     }

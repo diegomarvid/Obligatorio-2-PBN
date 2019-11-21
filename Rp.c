@@ -73,6 +73,8 @@ int main(int argc, char const *argv[])
 
         if (read < 0)
         {
+
+
             close(consola_socket);
         
             MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
@@ -90,9 +92,6 @@ int main(int argc, char const *argv[])
      
         conv_to_struct(&mensaje, buffer);
 
-        
-        
-        sleep(1);
 
         //*********MANDA A MM***********//
 

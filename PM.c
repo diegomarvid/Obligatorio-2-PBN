@@ -8,8 +8,30 @@
 #include <errno.h>
 #include "constantes.h"
 #include "PM.h"
+#include "shm.c"
 
-Proceso lista_proceso[PROCESS_MAX];
+
+volatile Proceso *lista_proceso;
+
+//Funcion string
+void str_split(char *build_string[], char string[], char *delim) {
+
+    char *token = strtok(string, delim); 
+
+    int length = 0;
+  
+    while (token != NULL) {
+
+        //printf("%s\n", token); 
+        build_string[length] = token; 
+        token = strtok(NULL, delim);
+        
+        length++; 
+
+    } 
+
+    build_string[length] = NULL;
+}
 
 
 //*****Funciones lista proceso******//
@@ -37,132 +59,37 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
 
 }
 
-void iniciar_lista_proceso(){
 
-    Proceso p;
-    p.RID = INVALIDO;
-    p.pid = INVALIDO;
-    p.estado = TERMINADO;
-    strcpy(p.cmd, "");
+pid_t crear_proceso(char cmd[]) {
 
-    int i;
+    char *comando[20];
 
-    for(i = 0; i < PROCESS_MAX; i++) {
-      
-        lista_proceso[i] = p;
+    //Auxiliar porque la funcion split modifica
+    //el array que se le pasa por parametro
+    char str_aux[CMD_SIZE];
+    strcpy(str_aux, cmd);
 
-    }
+    str_split(comando, str_aux, " ");    
 
-}
+    pid_t pid = fork();
 
-int request_process_space() {
-
-    Proceso p;
-    int i;
-
-    for(i = 0; i < PROCESS_MAX; i++) {
-        p = lista_proceso[i];
-        if(p.estado == TERMINADO){
-            return i;
-        }
-    }
-
-    return FALLO;
-
-}
-
-void print_proceso(pid_t pid) {
-    Proceso p;
-    int i;
-
-    for(i = 0; i < PROCESS_MAX; i++) {
-
-        p = lista_proceso[i];
-
-        if(p.pid == pid){
-
-
-            printf("Proceso \n");
-            
-            printf("RID: %d \n", p.RID);
-            printf("PID: %d \n", p.pid);
-
-            if(p.estado == INVALIDO) {
-                printf("Estado: Invalido \n");
-            } else if(p.estado == EJECUTANDO) {
-                printf("Estado: Ejecutando \n");
-            } else if(p.estado == SUSPENDIDO) {
-                printf("Estado: Suspendido \n");
-            } else if(p.estado == TERMINADO) {
-                printf("Estado: Terminado \n");
-            }
-
-            
-            printf("Cmd: %s \n", p.cmd);
-
-            printf("\n");
-        }
-    }
-}
-
-void print_lista_proceso() {
-
-    Proceso p;
-    int i;
-
-    for(i = 0; i < PROCESS_MAX; i++) {
-
-        p = lista_proceso[i];
-        
-        if(p.estado != TERMINADO) {
-
-            printf("Proceso: \n");
-            printf("RID: %d \n", p.RID);
-            printf("PID: %d \n", p.pid);
-
-            if(p.estado == INVALIDO) {
-                printf("Estado: Invalido \n");
-            } else if(p.estado == EJECUTANDO) {
-                printf("Estado: Ejecutando \n");
-            } else if(p.estado == SUSPENDIDO) {
-                printf("Estado: Suspendido \n");
-            } else if(p.estado == TERMINADO) {
-                printf("Estado: Terminado \n");
-            }
-
-            
-            printf("Cmd: %s \n", p.cmd);
-
-            printf("\n");
-
-        }
-   
-    }
-
-}
-
-int agregar_proceso(pid_t rid, pid_t pid, int estado, char cmd[]){
-    
-    int indice = request_process_space();
-
-    if(indice != FALLO) {
-
-        Proceso p;
-        p.RID = rid;
-        p.pid = pid;
-        p.estado = estado;
-        strcpy(p.cmd, cmd);
-
-        lista_proceso[indice] = p;
-
-        return indice;
-
-    } else{
+    if(pid < 0) {
 
         return FALLO;
-    }
-    
 
+    } else if(pid == 0){
+
+        execvp(comando[0], &comando[0]);
+
+        return FALLO;
+     
+    } else {
+
+        printf("[%d] Proceso creado \n", pid);
+        
+    }
+
+    return pid;
 
 }
 
@@ -170,30 +97,37 @@ int agregar_proceso(pid_t rid, pid_t pid, int estado, char cmd[]){
 void ejecutar_procesos() {
 
 
-    while(1) {
+    Proceso p;
+    int i;
+    pid_t pid;
 
-        Proceso p;
-        int i;
+    while(TRUE) {
+
+        
 
         for(i = 0; i < PROCESS_MAX; i++) {
 
             p = lista_proceso[i];
 
-            // if(p.estado == CREAR) {
-            //     if(crear_proceso_pausado(p.pid, p.cmd) == FALLO) {
-            //         MYERR(EXIT_SUCCESS, "Error al crear proceso");
-            //     }
+            if(p.estado == CREAR) {
 
+                pid = crear_proceso(p.cmd);
 
-            // }
+                if(pid == FALLO) {
+                    lista_proceso[i].pid = INVALIDO;
+                    printf("Error en la creacion del proceso \n");
 
+                } else {
+                    lista_proceso[i].pid = pid;
+                    lista_proceso[i].estado = EJECUTANDO;
+                }
+                
 
+             }
 
             if(p.estado == EJECUTANDO) {
                 kill(p.pid, SIGCONT);
-                if(sleep(1) != 0) {
-                    //Manejo de error
-                }
+                sleep(5);
                 kill(p.pid, SIGSTOP);
             }
 
@@ -204,6 +138,8 @@ void ejecutar_procesos() {
 
 }
 
+
+//*******Funciones de signals********//
 
 void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
 
@@ -232,114 +168,27 @@ void sigChildSet() {
     sigaction(SIGCHLD, &action, &oldaction);
 }
 
-pid_t crear_proceso_pausado(char *comando[], char cmd[]) {
 
-    pid_t pid = fork();
 
-    if(pid < 0) {
 
-        perror("Error al hacer fork \n");
 
-    } else if(pid == 0){
 
-        execvp(comando[0], &comando[0]);
-
-        perror("Error en la ejecucion del hijo \n");
-     
-    } else {
-
-        //kill(pid, SIGSTOP);
-
-        if(agregar_proceso(0, pid, EJECUTANDO, cmd) == -1){
-            printf("Error en espacio de memoria \n");
-        }    
-
-        printf("[%d] Proceso creado \n", pid);
-        
-    }
-
-    return pid;
-
-}
-
-void str_split(char *build_string[], char string[], char *delim) {
-
-    char *token = strtok(string, delim); 
-
-    int length = 0;
-  
-    while (token != NULL) {
-
-        //printf("%s\n", token); 
-        build_string[length] = token; 
-        token = strtok(NULL, delim);
-        
-        length++; 
-
-    } 
-
-    build_string[length] = NULL;
-}
-
-int clean_stdin()
-{
-    while (getchar()!='\n');
-    return 1;
-}
 
 
 int main(int argc, char const *argv[])
 {
+
+
     //Seteo interrupciones para Child
     sigChildSet();
 
-    //Iniciar lista de procesos
-    iniciar_lista_proceso();
-
-    for(int i = 0; i < 3; i++) {
-
-        //Comando a ejecutar
-        char string[CMD_SIZE];
-
-        printf("Ingrese comando a ejecutar: \n");
-
-        if (scanf("%[^\n]", string) == -1){
-            MYERR(EXIT_FAILURE, "Error en el comando \n");
-        }
-
-        clean_stdin();
-
-        //Array para excevp
-        char *comando[20];
-        //Auxiliar para que split no modifique string
-        char str_aux[CMD_SIZE];
-        strcpy(str_aux, string);
-
-        //Cargo los parametros del string en el array
-        str_split(comando, str_aux, " ");
-
-        //Creo proceso pausado
-        pid_t pid = crear_proceso_pausado(comando, string);
-
-        //sleep(3);
-
-        //print_lista_proceso();
-
-    }
-
-	sleep(3);
-    printf("\n");
-    //print_lista_proceso();
-    //sleep(3);
-    printf("Ahora se ejecutaran los procesos: \n");
-    sleep(1);
+    lista_proceso = obtener_shm(0);
 
     ejecutar_procesos();
 
-	//El padre queda esperando para manejar la muerte del hijo
-    while(1){
 
-    }
+
+ 
 
     return 0;
 }
