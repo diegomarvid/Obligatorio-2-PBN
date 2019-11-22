@@ -18,6 +18,12 @@
 int monitored_fd_set[2] = {-1, -1};
 
 
+void refresh_fd_set(fd_set *fd_set_ptr) {
+    FD_ZERO(fd_set_ptr);
+    FD_SET(monitored_fd_set[0], fd_set_ptr);
+    FD_SET(monitored_fd_set[1], fd_set_ptr);
+}
+
 void desplegar_menu(){
 
 	printf("Las opciones del menu son:\n1-Crear proceso.\n2-Eliminar proceso.\n3-Suspender proceso.\n4-Reanudar proceso.");
@@ -177,37 +183,62 @@ int main(int argc,char *argv[]){
 
 
 		// int socket = sock_connect(txt_ip, ipport);
+
+
+
+		
+		//*****Variables Socket*******//
+
 		int socket = sock_connect_in(SERVERHOST, PORT);
 		printf("socket:%d\n",socket);
+		int read;
 
 		//******Variables select*******//
 
 		// //Guardo fd en el array para el select
-		// monitored_fd_set[0] = STDIN_FILENO;
-		// monitored_fd_set[1] = socket;
+		monitored_fd_set[0] = STDIN_FILENO;
+		monitored_fd_set[1] = socket;
 
 		fd_set readfds;
+
+		
+		desplegar_menu();
 
 		do
 		{
 
-			desplegar_menu();
+			refresh_fd_set(&readfds);
 
-			opcion = readInt(1, 8);
+			select(socket + 1, &readfds, NULL, NULL, NULL);
 
-			if (opcion != 7)
-			{
+			if(FD_ISSET(STDIN_FILENO, &readfds)) {
 
-				crear_mensaje(opcion, mensaje);
+				opcion = readInt(1, 8);
 
-				transimitir_mensaje(socket, mensaje, respuesta);
+				if (opcion != 7) {
+					crear_mensaje(opcion, mensaje);
+					transimitir_mensaje(socket, mensaje, respuesta);
+				}
+				
+
+				
+			}else if(FD_ISSET(socket, &readfds)) {
+				read = recv(socket, respuesta, BUFFSIZE, 0);
+
+				if(read <= 0) {
+					MYERR(EXIT_FAILURE, "ERROR EN EL READ.");
+				}
+
+				printf("\n Respuesta: %s \n\n", respuesta);
 			}
 
-			} while ( opcion != 7 );
+			desplegar_menu();
+		
+	    } while ( opcion != 7 );
 			
-			close(socket);
+		close(socket);
 			
-			printf("Hasta luego!\n");
+		printf("Hasta luego!\n");
 		
 
 
