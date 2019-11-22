@@ -18,9 +18,9 @@ typedef struct {
 
     int op;
 
-    // int size;
+    char data[CMD_SIZE];
 
-    char data[CMD_SIZE]; 
+    int id; 
 
 } Mensaje;
 
@@ -39,11 +39,14 @@ typedef struct {
 
 #define SHM_SIZE sizeof(Proceso) * PROCESS_MAX
 
-#define OFFSET 3 * sizeof(Proceso)
+#define OFFSET 3
 
+enum { CREACION = 1, ELIMINACION, SUSPENCION, RENAUDAR, ESTADO, LISTA, CERRAR_CONSOLA, CERRAR_SISTEMA};
 
 enum { INVALIDO = - 1 , CREAR, EJECUTANDO , SUSPENDIDO , ELIMINAR , TERMINADO};
 
 enum { FALLO = - 1 , EXITO };
+
+enum { RP , PM , MM };
 
 #endif

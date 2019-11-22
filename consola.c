@@ -13,6 +13,11 @@
 
 //#define MYERR(status, ...) error_at_line(status, errno, __FILE__, __LINE__, __VA_ARGS__)
 
+
+
+int monitored_fd_set[2] = {-1, -1};
+
+
 void desplegar_menu(){
 
 	printf("Las opciones del menu son:\n1-Crear proceso.\n2-Eliminar proceso.\n3-Suspender proceso.\n4-Reanudar proceso.");
@@ -153,6 +158,8 @@ int main(int argc,char *argv[]){
 	char mensaje[BUFFSIZE];
 	char respuesta[BUFFSIZE];
 	//char cmd[CMD_SIZE];
+
+	
 	
 	//do{
 
@@ -172,21 +179,29 @@ int main(int argc,char *argv[]){
 		// int socket = sock_connect(txt_ip, ipport);
 		int socket = sock_connect_in(SERVERHOST, PORT);
 		printf("socket:%d\n",socket);
-		
-			do{
 
-				desplegar_menu();
+		//******Variables select*******//
 
-				opcion = readInt(1,8);
+		// //Guardo fd en el array para el select
+		// monitored_fd_set[0] = STDIN_FILENO;
+		// monitored_fd_set[1] = socket;
 
-				if (opcion != 7)
-				{
+		fd_set readfds;
 
-					crear_mensaje(opcion, mensaje);
+		do
+		{
 
-					transimitir_mensaje(socket, mensaje, respuesta);
+			desplegar_menu();
 
-				}
+			opcion = readInt(1, 8);
+
+			if (opcion != 7)
+			{
+
+				crear_mensaje(opcion, mensaje);
+
+				transimitir_mensaje(socket, mensaje, respuesta);
+			}
 
 			} while ( opcion != 7 );
 			

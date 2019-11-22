@@ -6,6 +6,7 @@
 #include <errno.h>
 #include "constantes.h"
 #include "MM.h"
+#include "DynList.c"
 #include "sock.c"
 #include "shm.c"
 
@@ -13,6 +14,7 @@
 
 int monitored_fd_set[MAX_CLIENTS];
 Proceso *lista_proceso;
+DynList *lista_fd;
 
 
 /*Remove all the FDs, if any, from the the array*/
@@ -146,12 +148,13 @@ int request_process_space() {
 
 }
 
-int agregar_proceso(char cmd[]){
+int agregar_proceso(char cmd[], int RID){
     
     int indice = request_process_space();
 
     if(indice != FALLO) {
 
+        lista_proceso[indice].RID = RID;
         lista_proceso[indice].pid = INVALIDO;
         lista_proceso[indice].estado = CREAR;
         strcpy(lista_proceso[indice].cmd, cmd);
@@ -195,22 +198,22 @@ void ejecutar_operacion(Mensaje mensaje) {
 
 
     //Crear proceso
-    if(mensaje.op == 1) {
-        if(agregar_proceso(mensaje.data) == FALLO) {
+    if(mensaje.op == CREACION) {
+        if(agregar_proceso(mensaje.data, mensaje.RID) == FALLO) {
             printf("Error al agregar proceso \n");
         }
     }
-    if(mensaje.op == 2) {
+    if(mensaje.op == ELIMINACION) {
         int pid;
         sscanf(mensaje.data, "%d", &pid);
         cambiar_estado_proceso(pid, TERMINADO);
     }
-    if(mensaje.op == 3) {
+    if(mensaje.op == SUSPENCION) {
         int pid;
         sscanf(mensaje.data, "%d", &pid);
         cambiar_estado_proceso(pid, SUSPENDIDO);
     }
-    if(mensaje.op == 4) {
+    if(mensaje.op == RENAUDAR) {
         int pid;
         sscanf(mensaje.data, "%d", &pid);
         cambiar_estado_proceso(pid, EJECUTANDO);
@@ -224,17 +227,21 @@ void ejecutar_operacion(Mensaje mensaje) {
 
 int main(int argc, char const *argv[]){
 
-    int sock_Rp;
+    int data_socket;
     int connection_socket;
     fd_set readfds;
     int i;
     int socket_actual = -1;
     char buffer[BUFFSIZE] = "Soy mm chota grande";
+    char buffer2[BUFFSIZE] = "SOY MM CHOTA GRANDE";
     Mensaje mensaje;
+    Nodo *nodo_fd;
 
     lista_proceso = obtener_shm(0);
 
     intitiaze_monitor_fd_set();
+
+    lista_fd = dynList_crear();
 
 
     unlink(SOCKET_NAME);
@@ -250,6 +257,7 @@ int main(int argc, char const *argv[]){
 
     add_to_monitored_fd_set(connection_socket);
     
+    
 
     while (TRUE){
 
@@ -263,15 +271,17 @@ int main(int argc, char const *argv[]){
         if(FD_ISSET(connection_socket, &readfds)){
 
     
-            sock_Rp = sock_open_un(connection_socket);
+            data_socket = sock_open_un(connection_socket);
 
-            if( sock_Rp < 0 ){
+            if( data_socket < 0 ){
 
                 MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");
 
             }
 
-            add_to_monitored_fd_set(sock_Rp);
+            add_to_monitored_fd_set(data_socket);
+            agregar_nodo(lista_fd, -1, data_socket);
+            print_dynlist(lista_fd);
 
 
         }else{
@@ -284,7 +294,7 @@ int main(int argc, char const *argv[]){
 
                     socket_actual = monitored_fd_set[i];
 
-                    //Recibo peticion de Rp
+                    //Recibo peticion
 
                     int read = recv(socket_actual, &mensaje, sizeof(mensaje), 0);
 
@@ -295,40 +305,73 @@ int main(int argc, char const *argv[]){
 
                     } else {
 
-                        ejecutar_operacion(mensaje);
 
-                        printf("[MM] recibe de Rp: \n");
-                        printf("Op: %d \n", mensaje.op);
-                        printf("Data: %s \n", mensaje.data);
 
-                        //Procesamiento
+                        if(mensaje.id == RP) {
 
-                        //Envio respuesta a Rp
+                            //Tengo PID y FD
+                            nodo_fd = buscar_nodo_fd(lista_fd, socket_actual);
 
-                        send(socket_actual, buffer, strlen(buffer) + 1, MSG_NOSIGNAL);
+                            if (nodo_fd != NULL)
+                            {
+                                nodo_fd->data = mensaje.RID;
+                                printf("RID: %d y el nodo tiene: %d", mensaje.RID, nodo_fd->data);
+                                print_dynlist(lista_fd);
+                            }
 
-                        printf("[MM]manda: %s\n", buffer);
+                            ejecutar_operacion(mensaje);
 
-                    }
+                            printf("[MM] recibe de Rp: \n");
+                            printf("Op: %d \n", mensaje.op);
+                            printf("Data: %s \n", mensaje.data);
+                            printf("id: %d \n", mensaje.id);
 
-                    
-            
+                            //Procesamiento
+
+                            //Envio respuesta a Rp
+                            if(mensaje.op != CREACION) {
+                                send(socket_actual, buffer, strlen(buffer) + 1, MSG_NOSIGNAL);
+                            }
+                            
+
+                            printf("[MM]manda: %s\n", buffer);
+                            
+                        } else if(mensaje.id == PM) {
+
+                            nodo_fd = buscar_nodo_data(lista_fd, mensaje.RID);
+
+                            printf("RID PM: %d \n", nodo_fd->data);
+                            printf("FD RID PM: %d \n", nodo_fd->fd);
+                            
+                            int pid;
+                            int status;
+
+                            sscanf(mensaje.data,"%d-%d", &pid, &status);
+                            if(status == FALLO) {
+
+                                if(pid == -1) {
+                                    printf("[%d] Error en la creacion \n", pid);
+                                } else{
+                                    printf("[%d] Error en proceso \n", pid);
+                                    send(nodo_fd->fd, buffer2, strlen(buffer2) + 1, MSG_NOSIGNAL);
+
+                                }
+                                
+                            } else {
+                                printf("[%d] Proceso creado \n", pid);
+                                send(nodo_fd->fd, buffer2, strlen(buffer2) + 1, MSG_NOSIGNAL);
+                            }
+
+                            
+                            
+
+                        }           
+
+                    }    
                     //remove_from_monitored_fd_set(socket_actual);
-
-                }
-
-            
+                }   
 
             }
-
-            
-
-
-
-
-
-
-
 
         }
 

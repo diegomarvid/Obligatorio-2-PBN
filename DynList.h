@@ -5,6 +5,8 @@ typedef struct Nodo {
 
     int data;
 
+    int fd;
+
     struct Nodo *next;
 
 
@@ -20,9 +22,11 @@ typedef struct DynList {
 
 DynList *dynList_crear(void);
 
-Nodo *agregar_nodo(DynList *dynlist, int data);
+Nodo *agregar_nodo(DynList *dynlist, int data, int fd);
 
 void print_dynlist(DynList *dynlist);
+
+Nodo *buscar_nodo_fd(DynList *dynlist, int fd);
 
 int eliminar_nodo(DynList *dynlist, int dato);
 

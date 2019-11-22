@@ -57,13 +57,9 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
 
     pid = waitpid(-1, &status, 0);
 
-
-
     eliminar_nodo(lista_Rp, pid);
 
     printf("[%d] Proceso Terminado \n", pid);    
-
-  
 
 }
 
@@ -93,7 +89,7 @@ pid_t crear_Rp(int sockfd, int socket) {
     } else if(pid > 0){
      
         printf("Creacion de R' exitosa, PID: %d \n", pid);
-        agregar_nodo(lista_Rp, pid);
+        agregar_nodo(lista_Rp, pid, -1);
         close(sockfd);
         
 
