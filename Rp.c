@@ -105,13 +105,16 @@ int main(int argc, char const *argv[])
             {
 
                 close(consola_socket);
+                close(mm_socket);
 
                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
+
             }
             else if (read == 0)
             {
 
                 close(consola_socket);
+                close(mm_socket);
                 
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
             }
@@ -130,6 +133,7 @@ int main(int argc, char const *argv[])
                 close(mm_socket);
 
                 MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
+
             }
 
             printf("[Rp]->[MM] Manda mensaje \n");
@@ -141,8 +145,9 @@ int main(int argc, char const *argv[])
         } else if(FD_ISSET(mm_socket, &readfds)) {
 
             //*********RECIBE DE MM***********//
+            //Rebice mensaje y lo formatea.
 
-            read = recv(mm_socket, buffer, BUFFSIZE, 0);
+            read = recv(mm_socket, &mensaje, sizeof(mensaje), 0);
 
             if (read < 0)
             {
@@ -158,9 +163,23 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
             }
 
-            printf("[Rp] Recibe de MM: %s \n", buffer);
+            printf("[Rp] Recibe de MM: %s con id %d \n", mensaje.data,mensaje.id);
+
 
             //*********MANDA A Consola***********//
+            //Formatear mensaje para consola.
+
+            if(mensaje.id==MM){
+
+                sprintf(buffer, "%d-%s", MM, mensaje.data);
+
+            }else if (mensaje.id==PM){
+
+                sprintf(buffer, "%d-%s", PM, mensaje.data);
+
+            }
+
+            printf("%s\n",buffer);
 
             if (send(consola_socket, buffer, strlen(buffer) + 1, MSG_NOSIGNAL) <= 0)
             {

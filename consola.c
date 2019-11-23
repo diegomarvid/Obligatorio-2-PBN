@@ -135,6 +135,8 @@ void sigIntSet() {
 
 
 void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
+	
+	int emisor;
 
 	if (send(sockfd, mensaje, (strlen(mensaje) + 1), MSG_NOSIGNAL) < 0)
 	{
@@ -143,12 +145,31 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 
 	printf("[C] Manda: %s \n", mensaje);
 
-	if (recv(sockfd, respuesta, BUFFSIZE, 0) < 0)
-	{
-		MYERR(EXIT_FAILURE, "[C] Error en el recv \n");
-	}
+	do{
 
-	printf("[C] Recibe: %s \n", respuesta); 
+		if (recv(sockfd, respuesta, BUFFSIZE, 0) < 0)
+		{
+			MYERR(EXIT_FAILURE, "[C] Error en el recv \n");
+		}
+
+		sscanf(respuesta,"%d-%[^'\n']s",&emisor,respuesta);
+
+		if(emisor== MM){
+
+			printf("[C]Recibe: %s\n", respuesta);
+
+		}else
+		{
+			
+			printf("Respuesta: %s\n", respuesta);
+
+		}
+		
+
+
+	}while(emisor != MM);
+
+	//printf("[C] Recibe: %s \n", respuesta); 
 }
 
 
@@ -228,8 +249,10 @@ int main(int argc,char *argv[]){
 				if(read <= 0) {
 					MYERR(EXIT_FAILURE, "ERROR EN EL READ.");
 				}
+				int emisor;
+				sscanf(respuesta,"%d-%[^'\n']s",&emisor,respuesta);
 
-				printf("\n Respuesta: %s \n\n", respuesta);
+				printf("\n Respuesta: %s \n", respuesta);
 			}
 
 			desplegar_menu();
