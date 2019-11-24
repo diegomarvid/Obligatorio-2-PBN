@@ -13,7 +13,7 @@ int monitored_fd_set[2] = {-1, -1};
 
 
 
-
+//Recibe un mensaje como un string y lo transforma en una estructura interna Mensaje.
 void conv_to_struct(Mensaje *mensaje, char buffer[]){
 
     int op;
@@ -30,6 +30,7 @@ void conv_to_struct(Mensaje *mensaje, char buffer[]){
 
 }
 
+
 void refresh_fd_set(fd_set *fd_set_ptr) {
     FD_ZERO(fd_set_ptr);
     FD_SET(monitored_fd_set[0], fd_set_ptr);
@@ -38,68 +39,10 @@ void refresh_fd_set(fd_set *fd_set_ptr) {
 
 
 
-int main(int argc, char const *argv[])
-{
-    
-    //Creo socket
-    //int socket = sock_listen(PORT);
 
-    char buffer[BUFFSIZE];
+void tarea_consola(int consola_socket, int mm_socket ,char[] buffer, Mensaje mensaje){
 
-    char string[BUFFSIZE] = "Mensaje del servidor papu";
-
-    printf("[Rp] Se creo un socket entre en el puerto: %d \n", PORT);
-
-    int consola_socket = atoi(argv[1]);
-
-    Mensaje mensaje = {getpid(), -1, "", RP};
-
-    int mm_socket;
-
-    mm_socket = sock_connect_un();
-
-    if( mm_socket < 0 ){
-
-        MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");
-
-    }
-
-    printf("Connection established with MM \n");
-
-    //*****Variables select*******//
-
-    //Maximo fd para el parametro del select
-    int max_fd = -1;
-
-    //Guardo fd en el array para el select
-    monitored_fd_set[0] = consola_socket;
-    monitored_fd_set[1] = mm_socket;
-
-    //Calculo del maximo fd
-    if(consola_socket > mm_socket) {
-        max_fd = consola_socket;
-    } else {
-        max_fd = mm_socket;
-    }
-
-    fd_set readfds;
-
-    //******Variables socket******//
-    int read;
-    
-
-
-    while(TRUE) {
-
-        refresh_fd_set(&readfds);
-
-        select(max_fd + 1, &readfds, NULL, NULL, NULL);
-
-        if(FD_ISSET(consola_socket, &readfds)) {
-
-            //*********RECIBE CONSOLA********//
-
-            read = recv(consola_socket, buffer, BUFFSIZE, 0);
+               read = recv(consola_socket, buffer, BUFFSIZE, 0);
 
             if (read < 0)
             {
@@ -135,12 +78,136 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
 
             }
+}
 
-            printf("[Rp]->[MM] Manda mensaje \n");
-            printf("RID: %d \n", mensaje.RID);
-            printf("Op: %d \n", mensaje.op);
-            printf("Data: %s \n", mensaje.data);
-            printf("Id: %d \n", mensaje.id);
+
+
+
+
+
+
+
+
+
+
+
+int main(int argc, char const *argv[])
+{
+    
+    //Creo socket
+    //int socket = sock_listen(PORT);
+
+    char buffer[BUFFSIZE];
+    char string[BUFFSIZE] = "";
+
+    printf("[Rp] Se creo un socket entre en el puerto: %d \n", PORT);
+
+
+    //Obtengo el valor del socket que conecta a Rp con su consola.
+    int consola_socket = atoi(argv[1]);
+    //Variable que guarda el socket que conecta a Rp con MM.
+    int mm_socket;
+
+    //Inicializo la estructura mensaje con valores default.
+    Mensaje mensaje = {getpid(), -1, "", RP};
+
+
+
+    //Conecto a Rp con MM.
+    mm_socket = sock_connect_un();
+
+    if( mm_socket < 0 ){
+
+
+
+
+
+        MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");
+
+    }
+
+
+    printf("Connection established with MM \n");
+
+    //*****Variables select*******//
+
+    //Maximo fd para el parametro del select
+    int max_fd = -1;
+
+    //Guardo fd en el array para el select
+    monitored_fd_set[0] = consola_socket;
+    monitored_fd_set[1] = mm_socket;
+
+    //Calculo del maximo fd
+    if(consola_socket > mm_socket) {
+        max_fd = consola_socket;
+    } else {
+        max_fd = mm_socket;
+    }
+
+    fd_set readfds;
+
+    //******Variables socket******//
+    int read;
+    
+
+
+    while(TRUE) {
+
+
+
+        //Actualizo los fd a controlar por el select.
+        refresh_fd_set(&readfds);
+
+        //Realizo un select el cual nos permite saber si usuario desea realizar una accion o MM nos envia resultados.
+        select(max_fd + 1, &readfds, NULL, NULL, NULL);
+
+        if(FD_ISSET(consola_socket, &readfds)) {
+
+           if( tarea_consola(consola_socket,mm_socket ,buffer, mensaje)==EXIT_FAILURE){
+
+               return EXIT_FAILURE;
+           }
+            //*********RECIBE CONSOLA********//
+
+            // read = recv(consola_socket, buffer, BUFFSIZE, 0);
+
+            // if (read < 0)
+            // {
+
+            //     close(consola_socket);
+            //     close(mm_socket);
+
+            //     MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
+
+            // }
+            // else if (read == 0)
+            // {
+
+            //     close(consola_socket);
+            //     close(mm_socket);
+                
+            //     MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
+            // }
+
+            // printf("[Rp] Recibe de consola: %s \n", buffer);
+
+            // //CONVIERTO A ESTRUCTURA INTERNA DEL SERVIDOR
+
+            // conv_to_struct(&mensaje, buffer);
+
+            // //*********MANDA A MM***********//
+
+            // if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0)
+            // {
+
+            //     close(mm_socket);
+
+            //     MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
+
+            // }
+
+
 
         } else if(FD_ISSET(mm_socket, &readfds)) {
 

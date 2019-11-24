@@ -61,7 +61,7 @@ int readInt( int min , int max ){
     
 	do
         {  
-       		printf( "Ingrese un numero entre %d y %d:\n", min , max );
+       		//printf( "Ingrese un numero entre %d y %d:\n", min , max );
         
 			r=scanf("%9d%c", &num , &enter);
 	
