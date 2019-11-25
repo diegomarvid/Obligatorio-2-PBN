@@ -32,7 +32,7 @@ void sigIntHandler(int signum, siginfo_t *info, void *ucontext ) {
 
     printf("Cerrando consola... \n");
 
-	
+
 	exit(EXIT_SUCCESS);
 }
 
@@ -58,7 +58,7 @@ void desplegar_menu(){
 
 	printf("\n\n");
 
-	printf("Las opciones del menu son:\n1-Crear proceso.\n2-Eliminar proceso.\n3-Suspender proceso.\n4-Reanudar proceso."); 
+	printf("Las opciones del menu son:\n1-Crear proceso.\n2-Eliminar proceso.\n3-Suspender proceso.\n4-Reanudar proceso.");
 	printf("\n5-Ver. estado proceso.\n6-Ver lista de procesos.\n7-Cerrar consola\n8-Cerrar sistema.\nIngrese un numero del ");
 	printf("uno al 8\n\n");
 
@@ -78,7 +78,7 @@ int crear_mensaje(int opcion, char msg[]){
 
 
 	switch (opcion){
-	
+
 		case 1:
 
 			readCMD(data);
@@ -106,7 +106,7 @@ int crear_mensaje(int opcion, char msg[]){
 
 			break;
 		case 4:
-			
+
 			PID = readPID("Ingrese el pid del proceso a reanudar.");
 
 			sprintf(data,"%d",PID);
@@ -117,7 +117,7 @@ int crear_mensaje(int opcion, char msg[]){
 		case 5:
 
 			PID = readPID("Ingrese el pid del proceso a ver estado.");
-			
+
 			sprintf(data,"%d",PID);
 
 			sprintf(msg, "%d-%s", opcion, data);
@@ -137,9 +137,9 @@ int crear_mensaje(int opcion, char msg[]){
 			sprintf(msg, "%d-%s", opcion, data);
 
 			break;
-		default:	
+		default:
 			printf("Error, ingreso erroeneo.");
-	
+
 	}
 
 	return 0;
@@ -152,18 +152,18 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 
 
 
-	/*   
-	
+	/*
+
 	Cada operacion tiene una respuesta sincronica,
 	entre medio pueden llegar resultados asincronicos
-	pero el servidor debe esperar y no desplegar el 
-	menu hasta recibir la respuesta asociada a la 
+	pero el servidor debe esperar y no desplegar el
+	menu hasta recibir la respuesta asociada a la
 	operacion realizada por el usuario. Es por esto
 	que se utiliza un while donde se sigue leyendo
 	hasta que se reciba una respuesta sincronica.
-	
+
 	*/
-	
+
 	int comunicacion;
 	int r;
 
@@ -182,7 +182,7 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 
 		r = recv(sockfd, respuesta, RESPUESTA_BUFFSIZE, 0);
 
-		if ( r == ERROR_CONNECTION){	
+		if ( r == ERROR_CONNECTION){
 			MYERR(EXIT_FAILURE, "[C] Se cayo el servidor \n");
 		} else if(r == END_OF_CONNECTION){
 			MYERR(EXIT_FAILURE, "[C] Conexion finalizada con el servidor \n");
@@ -194,19 +194,19 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 		sscanf(respuesta,"%d-%[^'\n']s",&comunicacion,respuesta);
 
 		//Cambio char '27' a enter para imprimirlo en un formato visible
-		replace_char(respuesta, (char) 27, '\n');
+		 replace_char(respuesta, (char) 27, '\n');
 
 		//Si es la respuesta de la operacion la muestro en pantalla con su formato.
 		if(comunicacion == SINCRONICO){
 			printf("[Rp]->[C] Recibe: %s\n", respuesta);
 		}
 		//Si es errores en procesos creados por la terminal lo muestro en pantalla con su formato.
-		else if (comunicacion == ASINCRONICO){			
+		else if (comunicacion == ASINCRONICO){
 			printf("|ADVERTENCIA|: %s\n", respuesta);
 		}
-		
 
-	//Leo los mensajes del servidor hasta obtener la respuesta de la operación. 
+
+	//Leo los mensajes del servidor hasta obtener la respuesta de la operación.
 	} while(comunicacion != SINCRONICO);
 
 }
@@ -229,15 +229,15 @@ int main(int argc,char *argv[]){
 	char respuesta[RESPUESTA_BUFFSIZE];
 	//char cmd[CMD_SIZE];
 
-	
+
 	//-----------Obtengo PORT e IP para conectarse----------//
 
 	//do{
 
 		// printf("Ingrese la direccion del servidor (ddd.ddd.ddd.ddd:pppp):\n");
-		
+
 		// while (scanf("%u.%u.%u.%u:%u", ip, ip+1, ip+2, ip+3, &ipport) != 5 || ip[0] > 255 || ip[1] > 255 || ip[2] > 255 || ip[3] > 255 || ipport > MAX_PORT || ipport < 3000) {
-			
+
 		// 	//Limpio stdin y pido nuevamente.
 		// 	while ( getchar() != '\n' );
 
@@ -251,7 +251,7 @@ int main(int argc,char *argv[]){
 
 
 
-		
+
 		//Conecto con el servidor en cuestion y almaceno su socket asociado.
 		int socket = sock_connect_in(SERVERHOST, PORT);
 
@@ -274,7 +274,7 @@ int main(int argc,char *argv[]){
 		//codigo d ela consola en su funcionamiento normal.
 		do
 		{
-			
+
 			//Actualizo los fd a controlar por el select.
 			refresh_fd_set(&readfds);
 			//Realizo un select el cual nos permite saber si el usuario desea realizar una accion o no.
@@ -293,10 +293,10 @@ int main(int argc,char *argv[]){
 					transimitir_mensaje(socket, mensaje, respuesta);
 				}
 
-			//Luego de realizar una tarea y obtener su resultado, nuevamente despliego el menu.	
+			//Luego de realizar una tarea y obtener su resultado, nuevamente despliego el menu.
 			desplegar_menu();
 
-			//Si el servidor envia mensaje de procesos fallidos la consola los capta mientras que no se este realizando ninguna operacion.	
+			//Si el servidor envia mensaje de procesos fallidos la consola los capta mientras que no se este realizando ninguna operacion.
 			}else if(FD_ISSET(socket, &readfds)) {
 
 				//Lee del servidor y formatea su mensaje.
@@ -315,17 +315,16 @@ int main(int argc,char *argv[]){
 			}
 
 			//desplegar_menu();
-		
+
 	    } while ( opcion != 7 );
 
 		//Cierre de consola, se envio el mensaje de cierre, solo hace falta cerrar su socket.
 		close(socket);
-			
+
 		printf("Hasta luego!\n");
-		
+
 
 
 	return 0;
 
 	}
-

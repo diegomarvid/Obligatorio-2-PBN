@@ -9,7 +9,7 @@ pid_t suspender_proceso(char *data);
 
 pid_t renaudar_proceso(pid_t pid, int *shm);
 
-int obtener_estado(pid_t pid, int *shm);
+int obtener_estado(pid_t pid);
 
 int cerrar_sistema(void);
 

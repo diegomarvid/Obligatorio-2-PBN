@@ -51,7 +51,7 @@ remove_from_monitored_fd_set(int skt_fd){
 
     int i = 0;
 
-    while (i < MAX_CLIENTS && monitored_fd_set[i] != skt_fd){    
+    while (i < MAX_CLIENTS && monitored_fd_set[i] != skt_fd){
         i++;
     }
 
@@ -83,7 +83,7 @@ get_max_fd(){
 }
 
 
-/* Clone all the FDs in monitored_fd_set array into 
+/* Clone all the FDs in monitored_fd_set array into
  * fd_set Data structure*/
 static void
 refresh_fd_set(fd_set *fd_set_ptr){
@@ -120,8 +120,21 @@ int request_process_space() {
 
 }
 
+int obtener_estado(pid_t pid) {
+
+  int i;
+
+  for(i = 0; i < PROCESS_MAX; i++) {
+      if(lista_proceso[i].pid == pid && lista_proceso[i].estado != TERMINADO) {
+        return lista_proceso[i].estado;
+      }
+  }
+
+  return INVALIDO;
+}
+
 int agregar_proceso(char cmd[], int RID){
-    
+
     int indice = request_process_space();
 
     if(indice != FALLO) {
@@ -144,7 +157,7 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
 
     Proceso p;
     int i;
-    
+
     for(i = 0; i < PROCESS_MAX; i++) {
 
         p = lista_proceso[i];
@@ -155,10 +168,27 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
                 return EXITO;
             }
         }
-        
+
     }
 
     return FALLO;
+
+}
+
+void formatear_estado(Mensaje *mensaje, pid_t pid, int estado) {
+
+
+    if(estado == INVALIDO) {
+      sprintf(mensaje->data, "[%d] %s", pid, "No se encontro el proceso ");
+    } else if(estado == CREAR) {
+      sprintf(mensaje->data, "[%d] %s", pid, "En proceso de creacion ");
+    } else if(estado == EJECUTANDO) {
+      sprintf(mensaje->data, "[%d] %s", pid, "Ejectuando ");
+    } else if(estado == SUSPENDIDO) {
+      sprintf(mensaje->data, "[%d] %s", pid, "Suspendido ");
+    }
+
+    mensaje->id = MM;
 
 }
 
@@ -170,7 +200,7 @@ void obtener_lista(Mensaje *mensaje){
     int cantidad_encontrados = 0;
     Proceso p;
     char end = (char) 27;
-    
+
     for(i = 0; i < PROCESS_MAX; i++) {
 
         p = lista_proceso[i];
@@ -218,18 +248,15 @@ void ejecutar_operacion(Mensaje *mensaje) {
         }else{
             strcpy(mensaje->data,"Exito al eliminar proceso.\n");
         }
-
         mensaje->id = MM;
-        
-
     }
     if(mensaje->op == SUSPENCION) {
         int pid;
         sscanf(mensaje->data, "%d", &pid);
-      
+
         if (cambiar_estado_proceso(pid, SUSPENDIDO) == FALLO){
             strcpy(mensaje->data,"Error al suspender proceso.\n");
-        }else{  
+        }else{
             strcpy(mensaje->data,"Exito al suspender proceso.\n");
         }
         mensaje->id = MM;
@@ -244,13 +271,16 @@ void ejecutar_operacion(Mensaje *mensaje) {
         }else{
             strcpy(mensaje->data,"Exito al reanudar proceso.\n");
         }
-        mensaje->id = MM;       
+        mensaje->id = MM;
     }
 
-    // if(mensaje->op == ESTADO){
+    if(mensaje->op == ESTADO){
+        int pid;
+        sscanf(mensaje->data, "%d", &pid);
 
-
-    // }
+        int estado = obtener_estado(pid);
+        formatear_estado(mensaje, pid, estado);
+    }
 
     if(mensaje->op == LISTA){
         obtener_lista(mensaje);
@@ -291,8 +321,8 @@ int main(int argc, char const *argv[]){
     }
 
     add_to_monitored_fd_set(connection_socket);
-    
-    
+
+
     while (TRUE){
 
         refresh_fd_set(&readfds);
@@ -304,7 +334,7 @@ int main(int argc, char const *argv[]){
 
         if(FD_ISSET(connection_socket, &readfds)){
 
-    
+
             data_socket = sock_open_un(connection_socket);
 
             if( data_socket == ERROR_CONNECTION ){
@@ -317,7 +347,7 @@ int main(int argc, char const *argv[]){
 
 
         }else{
-            
+
             socket_actual = -1;
 
             for(i = 0; i < MAX_CLIENTS; i++){
@@ -334,10 +364,10 @@ int main(int argc, char const *argv[]){
                     if(read == ERROR_CONNECTION) {
 
                         close(socket_actual);
-                        MYERR(EXIT_FAILURE, "No se pudo leer en socket"); 
+                        MYERR(EXIT_FAILURE, "No se pudo leer en socket");
 
                     } else if(read == END_OF_CONNECTION){
-
+                        eliminar_nodo_fd(lista_fd, socket_actual);
                         remove_from_monitored_fd_set(socket_actual);
                         close(socket_actual);
 
@@ -372,17 +402,17 @@ int main(int argc, char const *argv[]){
                             if(mensaje.op != CREACION) {
                                 send(socket_actual, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
                             }
-                            
+
                             printf("[MM] envia a Rp: \n");
                             printf("Op: %d \n", mensaje.op);
                             printf("Data: %s \n", mensaje.data);
                             printf("id: %d \n", mensaje.id);
-                            
+
                         } else if(mensaje.id == PM) {
 
                             //Obtengo el fd del Rp asociado al proceso para enviarle el mensaje.
                             nodo_fd = buscar_nodo_data(lista_fd, mensaje.RID);
-        
+
                             int pid;
                             int status;
 
@@ -397,7 +427,7 @@ int main(int argc, char const *argv[]){
                                 //el pid es FALLO
 
                                 if(pid == FALLO) {
-                                   
+
                                     sprintf(mensaje.data, "[%d] %s", pid, "Error en la creacion\n");
 
                                     mensaje.id = MM;
@@ -405,7 +435,7 @@ int main(int argc, char const *argv[]){
                                     send(nodo_fd->fd, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
 
                                 } else{
-                                    
+
                                     sprintf(mensaje.data, "[%d] %s", pid, "Error en la ejecucion\n");
 
                                     //Se cambia el identificador a PM para despues saber que
@@ -416,18 +446,18 @@ int main(int argc, char const *argv[]){
                                     send(nodo_fd->fd, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
 
                                 }
-                                
+
                             } else {
-          
+
                                 sprintf(mensaje.data, "[%d] %s", pid, "Proceso creado\n");
 
                                 mensaje.id = MM;
 
                                 send(nodo_fd->fd, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
-                            }                
-                        }           
-                    }    
-                }   
+                            }
+                        }
+                    }
+                }
             }
         }
     }

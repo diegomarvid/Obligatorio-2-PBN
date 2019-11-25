@@ -57,7 +57,7 @@ void refresh_fd_set(fd_set *fd_set_ptr) {
 
 //                 close(consola_socket);
 //                 close(mm_socket);
-                
+
 //                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
 //             }
 
@@ -83,7 +83,7 @@ void refresh_fd_set(fd_set *fd_set_ptr) {
 
 int main(int argc, char const *argv[])
 {
-    
+
     //Creo socket
     //int socket = sock_listen(PORT);
 
@@ -159,7 +159,7 @@ int main(int argc, char const *argv[])
             }
             else if (read == END_OF_CONNECTION){
                 close(consola_socket);
-                close(mm_socket);         
+                close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con Consola\n");
             }
 
@@ -171,7 +171,7 @@ int main(int argc, char const *argv[])
 
             //*********MANDA A MM***********//
 
-            if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0){     
+            if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0){
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
             }
@@ -192,13 +192,14 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con MM \n");
             }
 
-            printf("[Rp] Recibe de MM: %s con id %d \n", mensaje.data,mensaje.id);
+            printf("[Rp] Recibe de MM: %s con id %d \n", mensaje.data, mensaje.id);
 
 
             //*********MANDA A Consola***********//
             //Formatear mensaje para consola.
 
             //A Rp le llega de la forma PID-RESPUESTA_STR
+            strcpy(respuesta, "");
 
             if(mensaje.id == MM){
                 sprintf(respuesta, "%d-%s", SINCRONICO, mensaje.data);
@@ -213,9 +214,9 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
             }
 
-            printf("[Rp]->[C] Manda: %s \n", buffer);
+            printf("[Rp]->[C] Manda: %s \n", respuesta);
         }
-        
+
    }
 
     return 0;
