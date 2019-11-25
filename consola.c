@@ -175,6 +175,11 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 		//Separo el mensajes en sus dos componentes.
 		sscanf(respuesta,"%d-%[^'\n']s",&comunicacion,respuesta);
 
+		    int end1 = 27;
+    		char end = (char) 27;
+
+		respuesta[strcspn(respuesta , &end)] = '\n';
+
 		//Si es la respuesta de la operacion la muestro en pantalla con su formato.
 		if(comunicacion == SINCRONICO){
 			printf("[Rp]->[C] Recibe: %s\n", respuesta);

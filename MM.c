@@ -199,7 +199,8 @@ void obtener_lista(Mensaje *mensaje){
     int i;
     int cantidad_encontrados = 0;
     Proceso p;
-
+    int end1 = 27;
+    char end = (char)end1;
     
     for(i = 0; i < PROCESS_MAX; i++) {
 
@@ -208,9 +209,11 @@ void obtener_lista(Mensaje *mensaje){
         if(p.RID == mensaje->RID && p.estado != TERMINADO && p.estado != INVALIDO) {
             cantidad_encontrados++;
             sprintf(aux_str,"%d-%s", p.pid ,p.cmd);
+            strncat(aux_str,&end,1);
             strcat(lista_str,aux_str);
         }
     }
+
 
     if (cantidad_encontrados > 0){
         strcpy(mensaje->data, lista_str);
