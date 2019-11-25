@@ -152,12 +152,12 @@ int main(int argc, char const *argv[])
 
             read = recv(consola_socket, buffer, ENTRADA_BUFFSIZE, 0);
 
-            if (read == FALLO){
+            if (read == ERROR_CONNECTION){
                 close(consola_socket);
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
             }
-            else if (read == 0){
+            else if (read == END_OF_CONNECTION){
                 close(consola_socket);
                 close(mm_socket);         
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con Consola\n");
@@ -183,11 +183,11 @@ int main(int argc, char const *argv[])
 
             read = recv(mm_socket, &mensaje, sizeof(mensaje), 0);
 
-            if (read == FALLO){
+            if (read == ERROR_CONNECTION){
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
             }
-            else if (read == 0){
+            else if (read == END_OF_CONNECTION){
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con MM \n");
             }

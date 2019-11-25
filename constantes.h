@@ -71,6 +71,11 @@ enum { RP , PM , MM };
 //Tipo de comunicacion
 enum { SINCRONICO, ASINCRONICO };
 
+//Errores de socket
+enum {ERROR_CONNECTION = -1, END_OF_CONNECTION};
+
+
+
 
 
 #endif

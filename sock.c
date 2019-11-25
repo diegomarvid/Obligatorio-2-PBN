@@ -5,7 +5,9 @@
 #include <arpa/inet.h> // Socket addresses
 #include <sys/un.h>
 #include <errno.h>
+#include "constantes.h"
 #include "sock.h"
+
 
 #define MAX_CLIENTS 20
 #define PORT 3045

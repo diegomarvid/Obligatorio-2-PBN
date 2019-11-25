@@ -165,6 +165,7 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 	*/
 	
 	int comunicacion;
+	int r;
 
 	//Envia el mensaje con formato asociado.
 
@@ -179,9 +180,12 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 	//Recibe mensajes del servidor hasta que llegue el resultado de la tarea.
 	do{
 
-		if (recv(sockfd, respuesta, RESPUESTA_BUFFSIZE, 0) < 0)
-		{
-			MYERR(EXIT_FAILURE, "[C] Error en el recv \n");
+		r = recv(sockfd, respuesta, RESPUESTA_BUFFSIZE, 0);
+
+		if ( r == ERROR_CONNECTION){	
+			MYERR(EXIT_FAILURE, "[C] Se cayo el servidor \n");
+		} else if(r == END_OF_CONNECTION){
+			MYERR(EXIT_FAILURE, "[C] Conexion finalizada con el servidor \n");
 		}
 
 		//Los mensajes del servidor son de la forma comunicacion-resultado.
@@ -189,6 +193,7 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 		//Separo el mensajes en sus dos componentes.
 		sscanf(respuesta,"%d-%[^'\n']s",&comunicacion,respuesta);
 
+		//Cambio char '27' a enter para imprimirlo en un formato visible
 		replace_char(respuesta, (char) 27, '\n');
 
 		//Si es la respuesta de la operacion la muestro en pantalla con su formato.
@@ -229,9 +234,9 @@ int main(int argc,char *argv[]){
 
 	//do{
 
-		// printf("Ingrese la direccion del servidor (ddd.ddd.ddd.ddd,pppp):\n");
+		// printf("Ingrese la direccion del servidor (ddd.ddd.ddd.ddd:pppp):\n");
 		
-		// while (scanf("%u.%u.%u.%u,%u", ip, ip+1, ip+2, ip+3, &ipport) != 5 || ip[0] > 255 || ip[1] > 255 || ip[2] > 255 || ip[3] > 255 || ipport > MAX_PORT || ipport < 3000) {
+		// while (scanf("%u.%u.%u.%u:%u", ip, ip+1, ip+2, ip+3, &ipport) != 5 || ip[0] > 255 || ip[1] > 255 || ip[2] > 255 || ip[3] > 255 || ipport > MAX_PORT || ipport < 3000) {
 			
 		// 	//Limpio stdin y pido nuevamente.
 		// 	while ( getchar() != '\n' );
@@ -259,6 +264,9 @@ int main(int argc,char *argv[]){
 		monitored_fd_set[1] = socket;
 
 		fd_set readfds;
+
+		//Variable para read en el socket
+		int r;
 
 		//Antes de comenzar se imprime el menu para asegurar su primera iteracion.
 		desplegar_menu();
@@ -292,8 +300,12 @@ int main(int argc,char *argv[]){
 			}else if(FD_ISSET(socket, &readfds)) {
 
 				//Lee del servidor y formatea su mensaje.
-				if(recv(socket, respuesta, RESPUESTA_BUFFSIZE, 0) <= 0) {
-					MYERR(EXIT_FAILURE, "ERROR EN EL READ.");
+				r = recv(socket, respuesta, RESPUESTA_BUFFSIZE, 0);
+
+				if(r == ERROR_CONNECTION) {
+					MYERR(EXIT_FAILURE, "Se cayo el servidor.");
+				} else if(r == END_OF_CONNECTION) {
+					MYERR(EXIT_FAILURE, "Se termino la conexion con el servidor");
 				}
 
 				sscanf(respuesta,"%d-%[^'\n']s",&comunicacion,respuesta);

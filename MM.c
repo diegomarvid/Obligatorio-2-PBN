@@ -307,10 +307,8 @@ int main(int argc, char const *argv[]){
     
             data_socket = sock_open_un(connection_socket);
 
-            if( data_socket < 0 ){
-
+            if( data_socket == ERROR_CONNECTION ){
                 MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");
-
             }
 
             add_to_monitored_fd_set(data_socket);
@@ -333,12 +331,12 @@ int main(int argc, char const *argv[]){
                     int read = recv(socket_actual, &mensaje, sizeof(mensaje), 0);
 
                     //Evaluo si se termino la conexion o hay una falla
-                    if(read == FALLO) {
+                    if(read == ERROR_CONNECTION) {
 
                         close(socket_actual);
                         MYERR(EXIT_FAILURE, "No se pudo leer en socket"); 
 
-                    } else if(read == 0){
+                    } else if(read == END_OF_CONNECTION){
 
                         remove_from_monitored_fd_set(socket_actual);
                         close(socket_actual);

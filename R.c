@@ -28,7 +28,7 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
     //Elimina al Rp asociado de su lista.
     eliminar_nodo(lista_Rp, pid);
 
-    printf("[%d] Proceso Terminado \n", pid);    
+    printf("[%d] Proceso Terminado con status %d \n", pid, status);
 
 }
 
@@ -141,7 +141,7 @@ int main(int argc, char const *argv[])
         
         int sock_Rp = sock_open_in(socket);
 
-        if (sock_Rp < 0){
+        if (sock_Rp == ERROR_CONNECTION){
 
             MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion \n");
 
