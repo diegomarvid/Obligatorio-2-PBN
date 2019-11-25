@@ -24,9 +24,7 @@ intitiaze_monitor_fd_set(){
     int i;
 
     for(i = 0 ; i < MAX_CLIENTS ; i++) {
-
         monitored_fd_set[i] = -1;
-
     }
 }
 
@@ -38,24 +36,12 @@ add_to_monitored_fd_set(int skt_fd){
     int i = 0;
 
     while (i < MAX_CLIENTS && monitored_fd_set[i] != -1){
-
         i++;
-
     }
 
     if(monitored_fd_set[i] == -1){
-
         monitored_fd_set[i] = skt_fd;
-
     }
-    // for( i = 0 ; i < MAX_CLIENT_SUPPORTED ; i++){
-
-    //     if(monitored_fd_set[i] != -1)
-    //         continue;
-    //     monitored_fd_set[i] = skt_fd;
-    //     break;
-    // }
-
 }
 
 
@@ -65,27 +51,13 @@ remove_from_monitored_fd_set(int skt_fd){
 
     int i = 0;
 
-    while (i < MAX_CLIENTS && monitored_fd_set[i] != skt_fd){
-        
+    while (i < MAX_CLIENTS && monitored_fd_set[i] != skt_fd){    
         i++;
-
     }
 
     if (monitored_fd_set[i] == skt_fd){
-
         monitored_fd_set[i] = -1;
-
     }
-
-    // monitored_fd_set[i] = skt_fd;
-    // for(; i < MAX_CLIENT_SUPPORTED; i++){
-
-    //     if(monitored_fd_set[i] != skt_fd)
-    //         continue;
-
-    //     monitored_fd_set[i] = -1;
-    //     break;
-    // }
 }
 
 
@@ -165,8 +137,6 @@ int agregar_proceso(char cmd[], int RID){
 
         return FALLO;
     }
-    
-
 
 }
 
@@ -199,8 +169,7 @@ void obtener_lista(Mensaje *mensaje){
     int i;
     int cantidad_encontrados = 0;
     Proceso p;
-    int end1 = 27;
-    char end = (char)end1;
+    char end = (char) 27;
     
     for(i = 0; i < PROCESS_MAX; i++) {
 
@@ -305,11 +274,13 @@ int main(int argc, char const *argv[]){
 
     intitiaze_monitor_fd_set();
 
+    //Lista dinamica para guardar cada Rp con su RID y fd asociado
     lista_fd = dynList_crear();
 
-
+    //Si hay un socket abierto con el mismo nombre cerralo
     unlink(SOCKET_NAME);
 
+    //Master socket fd para aceptar conexiones
     connection_socket = sock_listen_un();
 
 
@@ -322,7 +293,6 @@ int main(int argc, char const *argv[]){
     add_to_monitored_fd_set(connection_socket);
     
     
-
     while (TRUE){
 
         refresh_fd_set(&readfds);
@@ -362,21 +332,30 @@ int main(int argc, char const *argv[]){
 
                     int read = recv(socket_actual, &mensaje, sizeof(mensaje), 0);
 
-                    if(read <= 0) {
+                    //Evaluo si se termino la conexion o hay una falla
+                    if(read == FALLO) {
+
+                        close(socket_actual);
+                        MYERR(EXIT_FAILURE, "No se pudo leer en socket"); 
+
+                    } else if(read == 0){
 
                         remove_from_monitored_fd_set(socket_actual);
                         close(socket_actual);
 
                     } else {
 
+                        //Dependiendo del identificador del mensaje se realiza una
+                        //operacion diferente
+
                         if(mensaje.id == RP) {
 
                             //Tengo PID y FD
                             nodo_fd = buscar_nodo_fd(lista_fd, socket_actual);
 
+                            //Agrego RID a la lista dinamica
                             if (nodo_fd != NULL){
                                 nodo_fd->data = mensaje.RID;
-                                printf("RID: %d y el nodo tiene: %d", mensaje.RID, nodo_fd->data);
                                 print_dynlist(lista_fd);
                             }
 
@@ -386,10 +365,12 @@ int main(int argc, char const *argv[]){
                             printf("id: %d \n", mensaje.id);
 
                             //Realiza la operacion y genera el mensaje pertinente.
-                            //mensaje = ejecutar_operacion(mensaje);
                             ejecutar_operacion(&mensaje);
 
-                            //Envio respuesta a Rp- mensaje con identificador MM
+                            //Envio respuesta a Rp
+                            //El caso de creacion no se envia porque el encargado
+                            //de crear un proceso es PM y es el responsable de enviar
+                            //a MM el resultado de la creacion
                             if(mensaje.op != CREACION) {
                                 send(socket_actual, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
                             }
@@ -407,14 +388,18 @@ int main(int argc, char const *argv[]){
                             int pid;
                             int status;
 
-                            //PM envia a MM PID-STATUS para enviar estado de creacion de un proceso
+                            //PM envia a MM: PID-STATUS para enviar estado de creacion de un proceso
                             sscanf(mensaje.data,"%d-%d", &pid, &status);
 
                             if(status == FALLO) {
 
-                                if(pid == FALLO) {
-                                    //Envio respuesta a Rp- mensaje con identificador MM        
+                                //Fallo puede ser por error en el fork()
+                                //o error en el exec en una ejecucion
+                                //posterior. Por eso se diferencia cuando
+                                //el pid es FALLO
 
+                                if(pid == FALLO) {
+                                   
                                     sprintf(mensaje.data, "[%d] %s", pid, "Error en la creacion\n");
 
                                     mensaje.id = MM;
@@ -422,9 +407,12 @@ int main(int argc, char const *argv[]){
                                     send(nodo_fd->fd, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
 
                                 } else{
-                                    //Envio respuesta a Rp- mensaje con identificador PM
-                   
+                                    
                                     sprintf(mensaje.data, "[%d] %s", pid, "Error en la ejecucion\n");
+
+                                    //Se cambia el identificador a PM para despues saber que
+                                    //este mensaje es asincrono por un error en ejecucion y
+                                    //no en creacion
                                     mensaje.id = PM;
 
                                     send(nodo_fd->fd, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
@@ -432,9 +420,9 @@ int main(int argc, char const *argv[]){
                                 }
                                 
                             } else {
-                                //Envio respuesta a Rp- mensaje con identificador MM
-
+          
                                 sprintf(mensaje.data, "[%d] %s", pid, "Proceso creado\n");
+
                                 mensaje.id = MM;
 
                                 send(nodo_fd->fd, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);

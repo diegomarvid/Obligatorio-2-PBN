@@ -149,6 +149,20 @@ int crear_mensaje(int opcion, char msg[]){
 /*--------------------MENSAJES A SERVIDOR SINCRONOS---------------------------*/
 //Esta función envia una tarea a realizar por el servidor y espera hasta que el servidor responda su resultado.
 void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
+
+
+
+	/*   
+	
+	Cada operacion tiene una respuesta sincronica,
+	entre medio pueden llegar resultados asincronicos
+	pero el servidor debe esperar y no desplegar el 
+	menu hasta recibir la respuesta asociada a la 
+	operacion realizada por el usuario. Es por esto
+	que se utiliza un while donde se sigue leyendo
+	hasta que se reciba una respuesta sincronica.
+	
+	*/
 	
 	int comunicacion;
 
@@ -175,7 +189,6 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 		//Separo el mensajes en sus dos componentes.
 		sscanf(respuesta,"%d-%[^'\n']s",&comunicacion,respuesta);
 
-		//respuesta[strcspn(respuesta , &end)] = '\n';
 		replace_char(respuesta, (char) 27, '\n');
 
 		//Si es la respuesta de la operacion la muestro en pantalla con su formato.
@@ -188,8 +201,8 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 		}
 		
 
-	//Leo los mensajes del servidor hasta obtener la respuetsa de la operación. 
-	}while(comunicacion != SINCRONICO);
+	//Leo los mensajes del servidor hasta obtener la respuesta de la operación. 
+	} while(comunicacion != SINCRONICO);
 
 }
 

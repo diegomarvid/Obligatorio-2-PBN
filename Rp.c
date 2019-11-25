@@ -17,6 +17,7 @@ void conv_to_struct(Mensaje *mensaje, char buffer[]){
     int op;
     char data[CMD_SIZE];
 
+    //Lee hasta el enter del cmd
     if(sscanf(buffer, "%d-%[^\n]s", &op, data) == 0) {
         MYERR(EXIT_FAILURE, "Error en la conversion a mensaje");
     }
@@ -103,7 +104,9 @@ int main(int argc, char const *argv[])
     //Conecto a Rp con MM.
     mm_socket = sock_connect_un();
 
-    if( mm_socket < 0 ){
+    if( mm_socket == 0 ){
+        MYERR(EXIT_FAILURE, "MM se desconecto \n");
+    } else if( mm_socket < 0) {
         MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");
     }
 
@@ -149,7 +152,7 @@ int main(int argc, char const *argv[])
 
             read = recv(consola_socket, buffer, ENTRADA_BUFFSIZE, 0);
 
-            if (read < 0){
+            if (read == FALLO){
                 close(consola_socket);
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
@@ -157,7 +160,7 @@ int main(int argc, char const *argv[])
             else if (read == 0){
                 close(consola_socket);
                 close(mm_socket);         
-                MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
+                MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con Consola\n");
             }
 
             printf("[Rp] Recibe de consola: %s \n", buffer);
@@ -180,13 +183,13 @@ int main(int argc, char const *argv[])
 
             read = recv(mm_socket, &mensaje, sizeof(mensaje), 0);
 
-            if (read < 0){
+            if (read == FALLO){
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
             }
             else if (read == 0){
                 close(mm_socket);
-                MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
+                MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con MM \n");
             }
 
             printf("[Rp] Recibe de MM: %s con id %d \n", mensaje.data,mensaje.id);

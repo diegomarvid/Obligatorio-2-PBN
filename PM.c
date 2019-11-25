@@ -14,23 +14,18 @@
 
 volatile Proceso *lista_proceso;
 
-//TEST
-volatile int pid_creado;
-volatile int proceso_creado = FALSE;
-volatile int exito_creacion = TRUE;
+/*  Funcion para separar un string en un array de string por un delimitador  */
 
-//Funcion string
 void str_split(char *build_string[], char string[], char *delim) {
     char *token = strtok(string, delim);
     int length = 0;
 
     while (token != NULL) {
-        //printf("%s\n", token);
         build_string[length] = token;
         token = strtok(NULL, delim);
-
         length++;
     }
+
     build_string[length] = NULL;
 }
 
@@ -68,13 +63,12 @@ pid_t crear_proceso(char cmd[]) {
     str_split(comando, str_aux, " ");
 
     pid_t pid = fork();
+
     if(pid < 0) {
         return FALLO;
-
     } else if(pid == 0){
         execvp(comando[0], &comando[0]);
         exit(EXIT_FAILURE);
-
     } else {
         printf("\n\n[%d] Proceso creado \n\n", pid);
     }
@@ -95,11 +89,13 @@ void ejecutar_procesos(int mm_socket) {
 
             p = lista_proceso[i];
 
+            //CREAR PROCESO
+            //Se encarga de hacer fork y despues evaluar
+            //y enviar un send a MM con el status de creacion
+
             if(p.estado == CREAR) {
 
                 pid = crear_proceso(p.cmd);
-
-                printf("Crear: %d de %d \n", pid, getpid());
 
                 if(pid == FALLO) {
                     lista_proceso[i].pid = TERMINADO;
@@ -111,14 +107,11 @@ void ejecutar_procesos(int mm_socket) {
                     lista_proceso[i].pid = pid;
                     lista_proceso[i].estado = EJECUTANDO;
                    
-                    sprintf(mensaje.data, "%d-%d", pid, EXITO);
-                             
+                    sprintf(mensaje.data, "%d-%d", pid, EXITO);               
                 }
 
                 mensaje.op = CREACION;
                 mensaje.RID = p.RID;
-
-                printf("PM mandaaaaa\n");
 
                 if(send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0) {
                     MYERR(EXIT_FAILURE, "Error en el send");
@@ -130,6 +123,12 @@ void ejecutar_procesos(int mm_socket) {
                 sleep(5);
                 kill(p.pid, SIGSTOP);
             }
+
+            //Cuando un proceso muere con status de error
+            //se cambia su estado a invalido, es por esto
+            //que si se encuentra que un proceso murio
+            //se envia la falla y se cambia a terminado
+            //para convertirlo en espacio libre.
 
             if(p.estado == INVALIDO) {
                 mensaje.op = CREACION;
@@ -215,9 +214,6 @@ int main(int argc, char const *argv[])
     lista_proceso = obtener_shm(0);
 
     ejecutar_procesos(mm_socket);
-
-
-
 
 
     return 0;
