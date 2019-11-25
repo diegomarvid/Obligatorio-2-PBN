@@ -175,10 +175,8 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 		//Separo el mensajes en sus dos componentes.
 		sscanf(respuesta,"%d-%[^'\n']s",&comunicacion,respuesta);
 
-		    int end1 = 27;
-    		char end = (char) 27;
-
-		respuesta[strcspn(respuesta , &end)] = '\n';
+		//respuesta[strcspn(respuesta , &end)] = '\n';
+		replace_char(respuesta, (char) 27, '\n');
 
 		//Si es la respuesta de la operacion la muestro en pantalla con su formato.
 		if(comunicacion == SINCRONICO){
@@ -186,7 +184,7 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 		}
 		//Si es errores en procesos creados por la terminal lo muestro en pantalla con su formato.
 		else if (comunicacion == ASINCRONICO){			
-			printf("|ADVERTENCIA putooo|: %s\n", respuesta);
+			printf("|ADVERTENCIA|: %s\n", respuesta);
 		}
 		
 

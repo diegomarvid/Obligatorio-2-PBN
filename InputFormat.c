@@ -134,3 +134,16 @@ void readCMD(char cmd[]){
 	
 }
 
+char *replace_char(char *str, char find, char replace){
+
+	//Devuelve primera encontrada de find
+    char *current_pos = strchr(str,find);
+
+	//Mientras encuentre caracteres para cambiar los reemplazo
+    while (current_pos != NULL){
+        *current_pos = replace;
+        current_pos = strchr(current_pos,find);
+    }
+    return str;
+}
+
