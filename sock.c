@@ -11,7 +11,7 @@
 #define PORT 3045
 #define SERVERHOST "127.0.0.1"
 #define SOCKET_NAME "/tmp/PBN"
-#define BUFFSIZE 256
+
 
 int sock_listen_un (){
 

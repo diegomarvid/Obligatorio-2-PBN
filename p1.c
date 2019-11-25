@@ -7,12 +7,12 @@ int main(int argc, char const *argv[])
 {
     int i;
 
-    for(i = 0; i < 5; i++) {
+    for(i = 0; i < 25; i++) {
         printf("[%d] %d \n", getpid(), i);
         sleep(1);
     }
 
-    execl("dasdasdd", "sadsd", NULL);
+    //execl("dasdasdd", "sadsd", NULL);
 
-    return EXIT_FAILURE;
+    return 0;
 }

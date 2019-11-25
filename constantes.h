@@ -8,6 +8,10 @@ enum { FALSE , TRUE };
 #define PROCESS_MAX 100
 #define SHM_ADDR "/tmp/shm_pbn"
 #define PROJ_ID 'S'
+#define PID_SIZE 9
+#define DATA_SIZE PROCESS_MAX * (PID_SIZE + 1 + CMD_SIZE + 1)
+#define RESPUESTA_BUFFSIZE PID_SIZE + 1 + DATA_SIZE
+#define ENTRADA_BUFFSIZE PID_SIZE + 1 + CMD_SIZE
 
 
 #define MYERR(status, txt) error_at_line(status, errno, __FILE__, __LINE__ - 1, txt)
@@ -18,7 +22,7 @@ typedef struct {
 
     int op;
 
-    char data[CMD_SIZE];
+    char data[DATA_SIZE];
 
     int id; 
 
@@ -41,12 +45,18 @@ typedef struct {
 
 #define OFFSET 3
 
+//Lista de operaciones a ejecutar
 enum { CREACION = 1, ELIMINACION, SUSPENCION, RENAUDAR, ESTADO, LISTA, CERRAR_CONSOLA, CERRAR_SISTEMA};
 
+//Posibles estados de un proceso
 enum { INVALIDO = - 1 , CREAR, EJECUTANDO , SUSPENDIDO , ELIMINAR , TERMINADO};
 
 enum { FALLO = - 1 , EXITO };
 
 enum { RP , PM , MM };
+
+enum { SINCRONICO, ASINCRONICO };
+
+
 
 #endif

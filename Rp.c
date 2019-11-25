@@ -11,8 +11,6 @@
 
 int monitored_fd_set[2] = {-1, -1};
 
-
-
 //Recibe un mensaje como un string y lo transforma en una estructura interna Mensaje.
 void conv_to_struct(Mensaje *mensaje, char buffer[]){
 
@@ -40,54 +38,45 @@ void refresh_fd_set(fd_set *fd_set_ptr) {
 
 
 
-void tarea_consola(int consola_socket, int mm_socket ,char[] buffer, Mensaje mensaje){
+// void tarea_consola(int consola_socket, int mm_socket ,char[] buffer, Mensaje mensaje){
 
-               read = recv(consola_socket, buffer, BUFFSIZE, 0);
+//                read = recv(consola_socket, buffer, BUFFSIZE, 0);
 
-            if (read < 0)
-            {
+//             if (read < 0)
+//             {
 
-                close(consola_socket);
-                close(mm_socket);
+//                 close(consola_socket);
+//                 close(mm_socket);
 
-                MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
+//                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
 
-            }
-            else if (read == 0)
-            {
+//             }
+//             else if (read == 0)
+//             {
 
-                close(consola_socket);
-                close(mm_socket);
+//                 close(consola_socket);
+//                 close(mm_socket);
                 
-                MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
-            }
+//                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
+//             }
 
-            printf("[Rp] Recibe de consola: %s \n", buffer);
+//             printf("[Rp] Recibe de consola: %s \n", buffer);
 
-            //CONVIERTO A ESTRUCTURA INTERNA DEL SERVIDOR
+//             //CONVIERTO A ESTRUCTURA INTERNA DEL SERVIDOR
 
-            conv_to_struct(&mensaje, buffer);
+//             conv_to_struct(&mensaje, buffer);
 
-            //*********MANDA A MM***********//
+//             //*********MANDA A MM***********//
 
-            if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0)
-            {
+//             if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0)
+//             {
 
-                close(mm_socket);
+//                 close(mm_socket);
 
-                MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
+//                 MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
 
-            }
-}
-
-
-
-
-
-
-
-
-
+//             }
+// }
 
 
 
@@ -97,8 +86,8 @@ int main(int argc, char const *argv[])
     //Creo socket
     //int socket = sock_listen(PORT);
 
-    char buffer[BUFFSIZE];
-    char string[BUFFSIZE] = "";
+    char buffer[ENTRADA_BUFFSIZE];
+    char respuesta[RESPUESTA_BUFFSIZE];
 
     printf("[Rp] Se creo un socket entre en el puerto: %d \n", PORT);
 
@@ -111,19 +100,11 @@ int main(int argc, char const *argv[])
     //Inicializo la estructura mensaje con valores default.
     Mensaje mensaje = {getpid(), -1, "", RP};
 
-
-
     //Conecto a Rp con MM.
     mm_socket = sock_connect_un();
 
     if( mm_socket < 0 ){
-
-
-
-
-
         MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");
-
     }
 
 
@@ -149,12 +130,8 @@ int main(int argc, char const *argv[])
 
     //******Variables socket******//
     int read;
-    
-
 
     while(TRUE) {
-
-
 
         //Actualizo los fd a controlar por el select.
         refresh_fd_set(&readfds);
@@ -164,50 +141,37 @@ int main(int argc, char const *argv[])
 
         if(FD_ISSET(consola_socket, &readfds)) {
 
-           if( tarea_consola(consola_socket,mm_socket ,buffer, mensaje)==EXIT_FAILURE){
+        //    if( tarea_consola(consola_socket,mm_socket ,buffer, mensaje)==EXIT_FAILURE){
 
-               return EXIT_FAILURE;
-           }
+        //        return EXIT_FAILURE;
+        //    }
             //*********RECIBE CONSOLA********//
 
-            // read = recv(consola_socket, buffer, BUFFSIZE, 0);
+            read = recv(consola_socket, buffer, ENTRADA_BUFFSIZE, 0);
 
-            // if (read < 0)
-            // {
+            if (read < 0){
+                close(consola_socket);
+                close(mm_socket);
+                MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
+            }
+            else if (read == 0){
+                close(consola_socket);
+                close(mm_socket);         
+                MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
+            }
 
-            //     close(consola_socket);
-            //     close(mm_socket);
+            printf("[Rp] Recibe de consola: %s \n", buffer);
 
-            //     MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
+            //CONVIERTO A ESTRUCTURA INTERNA DEL SERVIDOR
 
-            // }
-            // else if (read == 0)
-            // {
+            conv_to_struct(&mensaje, buffer);
 
-            //     close(consola_socket);
-            //     close(mm_socket);
-                
-            //     MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
-            // }
+            //*********MANDA A MM***********//
 
-            // printf("[Rp] Recibe de consola: %s \n", buffer);
-
-            // //CONVIERTO A ESTRUCTURA INTERNA DEL SERVIDOR
-
-            // conv_to_struct(&mensaje, buffer);
-
-            // //*********MANDA A MM***********//
-
-            // if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0)
-            // {
-
-            //     close(mm_socket);
-
-            //     MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
-
-            // }
-
-
+            if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0){     
+                close(mm_socket);
+                MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
+            }
 
         } else if(FD_ISSET(mm_socket, &readfds)) {
 
@@ -216,17 +180,12 @@ int main(int argc, char const *argv[])
 
             read = recv(mm_socket, &mensaje, sizeof(mensaje), 0);
 
-            if (read < 0)
-            {
+            if (read < 0){
                 close(mm_socket);
-
                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
             }
-            else if (read == 0)
-            {
-
+            else if (read == 0){
                 close(mm_socket);
-
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
             }
 
@@ -236,39 +195,25 @@ int main(int argc, char const *argv[])
             //*********MANDA A Consola***********//
             //Formatear mensaje para consola.
 
-            if(mensaje.id==MM){
+            //A Rp le llega de la forma PID-RESPUESTA_STR
 
-                sprintf(buffer, "%d-%s", MM, mensaje.data);
-
-            }else if (mensaje.id==PM){
-
-                sprintf(buffer, "%d-%s", PM, mensaje.data);
-
+            if(mensaje.id == MM){
+                sprintf(respuesta, "%d-%s", SINCRONICO, mensaje.data);
+            }else if (mensaje.id == PM){
+                sprintf(respuesta, "%d-%s", ASINCRONICO, mensaje.data);
             }
 
-            printf("%s\n",buffer);
+            //printf("%s\n",buffer);
 
-            if (send(consola_socket, buffer, strlen(buffer) + 1, MSG_NOSIGNAL) <= 0)
-            {
-
+            if (send(consola_socket, respuesta, strlen(respuesta) + 1, MSG_NOSIGNAL) <= 0){
                 close(consola_socket);
-
                 MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
             }
 
             printf("[Rp]->[C] Manda: %s \n", buffer);
         }
         
-
-        
-
-       
-
-       
-       
-
    }
-
 
     return 0;
 }

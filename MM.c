@@ -192,74 +192,97 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
 
 }
 
+void obtener_lista(Mensaje *mensaje){
+
+    char lista_str[DATA_SIZE] = "";
+    char aux_str[ENTRADA_BUFFSIZE + 1] = "";
+    int i;
+    int cantidad_encontrados = 0;
+    Proceso p;
+
+    
+    for(i = 0; i < PROCESS_MAX; i++) {
+
+        p = lista_proceso[i];
+
+        if(p.RID == mensaje->RID && p.estado != TERMINADO && p.estado != INVALIDO) {
+            cantidad_encontrados++;
+            sprintf(aux_str,"%d-%s", p.pid ,p.cmd);
+            strcat(lista_str,aux_str);
+        }
+    }
+
+    if (cantidad_encontrados > 0){
+        strcpy(mensaje->data, lista_str);
+    }
+    else{
+        strcpy(mensaje->data, "No se encontro ningun proceso.\n");
+    }
+
+    mensaje->id = MM;
+}
 
 
-Mensaje ejecutar_operacion(Mensaje mensaje) {
+
+void ejecutar_operacion(Mensaje *mensaje) {
 
 
     //Crear proceso
-    if(mensaje.op == CREACION) {
+    if(mensaje->op == CREACION) {
 
-        if(agregar_proceso(mensaje.data, mensaje.RID) == FALLO) {
+        if(agregar_proceso(mensaje->data, mensaje->RID) == FALLO) {
             printf("Error al agregar proceso \n");
         }
+
+        mensaje->id = MM;
     }
-    if(mensaje.op == ELIMINACION) {
+    if(mensaje->op == ELIMINACION) {
         int pid;
-        sscanf(mensaje.data, "%d", &pid);
+        //En data viene el PID del proceso a eliminar en formato str
+        sscanf(mensaje->data, "%d", &pid);
 
-        if (cambiar_estado_proceso(pid, TERMINADO)==FALLO){
-
-            strcpy(mensaje.data,"Error al eliminar proceso.\n");
-
-        }else
-        {
-
-            strcpy(mensaje.data,"Exito al eliminar proceso.\n");
-
+        if (cambiar_estado_proceso(pid, TERMINADO) == FALLO){
+            strcpy(mensaje->data,"Error al eliminar proceso.\n");
+        }else{
+            strcpy(mensaje->data,"Exito al eliminar proceso.\n");
         }
-        mensaje.id=MM;
+
+        mensaje->id = MM;
         
 
     }
-    if(mensaje.op == SUSPENCION) {
+    if(mensaje->op == SUSPENCION) {
         int pid;
-        sscanf(mensaje.data, "%d", &pid);
-       // cambiar_estado_proceso(pid, SUSPENDIDO);
-
-        if (cambiar_estado_proceso(pid, SUSPENDIDO)==FALLO){
-
-            strcpy(mensaje.data,"Error al suspender proceso.\n");
-
-        }else
-        {
-
-            strcpy(mensaje.data,"Exito al suspender proceso.\n");
-
+        sscanf(mensaje->data, "%d", &pid);
+      
+        if (cambiar_estado_proceso(pid, SUSPENDIDO) == FALLO){
+            strcpy(mensaje->data,"Error al suspender proceso.\n");
+        }else{  
+            strcpy(mensaje->data,"Exito al suspender proceso.\n");
         }
-        mensaje.id=MM;
-
-    }
-    if(mensaje.op == RENAUDAR) {
-        int pid;
-        sscanf(mensaje.data, "%d", &pid);
-
-        if (cambiar_estado_proceso(pid, EJECUTANDO)==FALLO){
-
-            strcpy(mensaje.data,"Error al suspender proceso.\n");
-
-        }else
-        {
-
-            strcpy(mensaje.data,"Exito al suspender proceso.\n");
-
-        }
-        mensaje.id=MM;
-        
+        mensaje->id = MM;
     }
 
-    return mensaje;
+    if(mensaje->op == RENAUDAR) {
+        int pid;
+        sscanf(mensaje->data, "%d", &pid);
 
+        if (cambiar_estado_proceso(pid, EJECUTANDO) == FALLO){
+            strcpy(mensaje->data,"Error al reanudar proceso.\n");
+        }else{
+            strcpy(mensaje->data,"Exito al reanudar proceso.\n");
+        }
+        mensaje->id = MM;       
+    }
+
+    // if(mensaje->op == ESTADO){
+
+
+    // }
+
+    if(mensaje->op == LISTA){
+        obtener_lista(mensaje);
+    }
 }
 
 
@@ -271,8 +294,7 @@ int main(int argc, char const *argv[]){
     fd_set readfds;
     int i;
     int socket_actual = -1;
-    char buffer[BUFFSIZE] = "Soy mm chota grande";
-    char buffer2[BUFFSIZE] = "SOY MM CHOTA GRANDE";
+
     Mensaje mensaje;
     Nodo *nodo_fd;
 
@@ -344,15 +366,12 @@ int main(int argc, char const *argv[]){
 
                     } else {
 
-
-
                         if(mensaje.id == RP) {
 
                             //Tengo PID y FD
                             nodo_fd = buscar_nodo_fd(lista_fd, socket_actual);
 
-                            if (nodo_fd != NULL)
-                            {
+                            if (nodo_fd != NULL){
                                 nodo_fd->data = mensaje.RID;
                                 printf("RID: %d y el nodo tiene: %d", mensaje.RID, nodo_fd->data);
                                 print_dynlist(lista_fd);
@@ -364,19 +383,14 @@ int main(int argc, char const *argv[]){
                             printf("id: %d \n", mensaje.id);
 
                             //Realiza la operacion y genera el mensaje pertinente.
-                            mensaje = ejecutar_operacion(mensaje);
-
-
-                            //Procesamiento
+                            //mensaje = ejecutar_operacion(mensaje);
+                            ejecutar_operacion(&mensaje);
 
                             //Envio respuesta a Rp- mensaje con identificador MM
                             if(mensaje.op != CREACION) {
-
                                 send(socket_actual, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
-
                             }
                             
-
                             printf("[MM] envia a Rp: \n");
                             printf("Op: %d \n", mensaje.op);
                             printf("Data: %s \n", mensaje.data);
@@ -384,33 +398,31 @@ int main(int argc, char const *argv[]){
                             
                         } else if(mensaje.id == PM) {
 
+                            //Obtengo el fd del Rp asociado al proceso para enviarle el mensaje.
                             nodo_fd = buscar_nodo_data(lista_fd, mensaje.RID);
-
-                            printf("RID PM: %d \n", nodo_fd->data);
-                            printf("FD RID PM: %d \n", nodo_fd->fd);
-                            
+        
                             int pid;
                             int status;
 
+                            //PM envia a MM PID-STATUS para enviar estado de creacion de un proceso
                             sscanf(mensaje.data,"%d-%d", &pid, &status);
 
                             if(status == FALLO) {
 
-                                if(pid == -1) {
-                                    //Envio respuesta a Rp- mensaje con identificador MM
-                                    printf("[%d] Error en la creacion \n", pid);
+                                if(pid == FALLO) {
+                                    //Envio respuesta a Rp- mensaje con identificador MM        
 
-                                    strcpy(mensaje.data,"Error al crear proceso.\n");
-                                    mensaje.id=MM;
+                                    sprintf(mensaje.data, "[%d] %s", pid, "Error en la creacion\n");
+
+                                    mensaje.id = MM;
 
                                     send(nodo_fd->fd, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
 
                                 } else{
                                     //Envio respuesta a Rp- mensaje con identificador PM
-                                    printf("[%d] Error en proceso \n", pid);
-
-                                    strcpy(mensaje.data,"Error al crear proceso.\n");
-                                    mensaje.id=PM;
+                   
+                                    sprintf(mensaje.data, "[%d] %s", pid, "Error en la ejecucion\n");
+                                    mensaje.id = PM;
 
                                     send(nodo_fd->fd, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
 
@@ -418,47 +430,19 @@ int main(int argc, char const *argv[]){
                                 
                             } else {
                                 //Envio respuesta a Rp- mensaje con identificador MM
-                                printf("[%d] Proceso creado \n", pid);
 
-                                strcpy(mensaje.data,"Exito al crear proceso.\n");
-                                mensaje.id=MM;
+                                sprintf(mensaje.data, "[%d] %s", pid, "Proceso creado\n");
+                                mensaje.id = MM;
 
                                 send(nodo_fd->fd, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
-                            }
-
-                            
-                            
-
+                            }                
                         }           
-
                     }    
-                    //remove_from_monitored_fd_set(socket_actual);
                 }   
-
             }
-
         }
-
     }
 
-    // printf("Me cree de forma correcta:D\n");
 
-
-    // int sock_Rp;
-
-    // sock_Rp = sock_open_un(connection_socket);
-
-    // if( sock_Rp < 0 ){
-
-    //     MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");
-
-    // }
-
-    // printf("Se me conecto un Rp y su socket es %d \n",sock_Rp);
-
-
-       
-    //ejemplo(print);
-    
     return 0;
 }

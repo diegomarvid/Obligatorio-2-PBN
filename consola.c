@@ -56,9 +56,11 @@ void sigIntSet() {
 //Imprime el menu en pantalla.
 void desplegar_menu(){
 
+	printf("\n\n");
+
 	printf("Las opciones del menu son:\n1-Crear proceso.\n2-Eliminar proceso.\n3-Suspender proceso.\n4-Reanudar proceso."); 
 	printf("\n5-Ver. estado proceso.\n6-Ver lista de procesos.\n7-Cerrar consola\n8-Cerrar sistema.\nIngrese un numero del ");
-	printf("uno al 8\n");
+	printf("uno al 8\n\n");
 
 	return;
 }
@@ -115,7 +117,7 @@ int crear_mensaje(int opcion, char msg[]){
 		case 5:
 
 			PID = readPID("Ingrese el pid del proceso a ver estado.");
-
+			
 			sprintf(data,"%d",PID);
 
 			sprintf(msg, "%d-%s", opcion, data);
@@ -146,8 +148,9 @@ int crear_mensaje(int opcion, char msg[]){
 
 /*--------------------MENSAJES A SERVIDOR SINCRONOS---------------------------*/
 //Esta función envia una tarea a realizar por el servidor y espera hasta que el servidor responda su resultado.
-void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[], int emisor) {
+void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 	
+	int comunicacion;
 
 	//Envia el mensaje con formato asociado.
 
@@ -156,39 +159,34 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[], int emiso
 		MYERR(EXIT_FAILURE, "[C] Error en el send \n");
 	}
 
-	printf("[C] Manda: %s \n", mensaje);
+	printf("[C]->[Rp] Manda: %s \n", mensaje);
 
 
 	//Recibe mensajes del servidor hasta que llegue el resultado de la tarea.
 	do{
 
-		if (recv(sockfd, respuesta, BUFFSIZE, 0) < 0)
+		if (recv(sockfd, respuesta, RESPUESTA_BUFFSIZE, 0) < 0)
 		{
 			MYERR(EXIT_FAILURE, "[C] Error en el recv \n");
 		}
 
-		//Los mensajes del servidor son de la forma emisor-resultado.
+		//Los mensajes del servidor son de la forma comunicacion-resultado.
 
 		//Separo el mensajes en sus dos componentes.
-		sscanf(respuesta,"%d-%[^'\n']s",&emisor,respuesta);
+		sscanf(respuesta,"%d-%[^'\n']s",&comunicacion,respuesta);
 
 		//Si es la respuesta de la operacion la muestro en pantalla con su formato.
-		if(emisor== MM){
-
-			printf("[C]Recibe: %s\n", respuesta);
-
+		if(comunicacion == SINCRONICO){
+			printf("[Rp]->[C] Recibe: %s\n", respuesta);
 		}
 		//Si es errores en procesos creados por la terminal lo muestro en pantalla con su formato.
-		else if (emisor == PM)
-		{
-			
-			printf("Respuesta: %s\n", respuesta);
-
+		else if (comunicacion == ASINCRONICO){			
+			printf("|ADVERTENCIA putooo|: %s\n", respuesta);
 		}
 		
 
 	//Leo los mensajes del servidor hasta obtener la respuetsa de la operación. 
-	}while(emisor != MM);
+	}while(comunicacion != SINCRONICO);
 
 }
 
@@ -206,8 +204,8 @@ int main(int argc,char *argv[]){
 
 	//Variables auxiliares necesarias para el funcionamiento del menu.
 	int opcion = 1;
-	char mensaje[BUFFSIZE];
-	char respuesta[BUFFSIZE];
+	char mensaje[ENTRADA_BUFFSIZE];
+	char respuesta[RESPUESTA_BUFFSIZE];
 	//char cmd[CMD_SIZE];
 
 	
@@ -237,7 +235,7 @@ int main(int argc,char *argv[]){
 		int socket = sock_connect_in(SERVERHOST, PORT);
 
 		//Variable utilizada en la seccion de mensajes asincronicos del servidor.
-		int emisor;
+		int comunicacion;
 
 		//******Variables select*******//
 		//Guardo fd en el array para el select, los unicos son el socket con el servidor y STDIN.
@@ -268,7 +266,7 @@ int main(int argc,char *argv[]){
 				//Mando a realizar tal tarea y espero su resultado.
 				if (opcion != 7) {
 					crear_mensaje(opcion, mensaje);
-					transimitir_mensaje(socket, mensaje, respuesta, emisor);
+					transimitir_mensaje(socket, mensaje, respuesta);
 				}
 
 			//Luego de realizar una tarea y obtener su resultado, nuevamente despliego el menu.	
@@ -278,13 +276,13 @@ int main(int argc,char *argv[]){
 			}else if(FD_ISSET(socket, &readfds)) {
 
 				//Lee del servidor y formatea su mensaje.
-				if(recv(socket, respuesta, BUFFSIZE, 0) <= 0) {
+				if(recv(socket, respuesta, RESPUESTA_BUFFSIZE, 0) <= 0) {
 					MYERR(EXIT_FAILURE, "ERROR EN EL READ.");
 				}
 
-				sscanf(respuesta,"%d-%[^'\n']s",&emisor,respuesta);
+				sscanf(respuesta,"%d-%[^'\n']s",&comunicacion,respuesta);
 
-				printf("\n Respuesta: %s \n", respuesta);
+				printf("|ADVERTENCIA|: %s\n", respuesta);
 
 			}
 

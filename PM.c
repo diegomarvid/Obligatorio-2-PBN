@@ -118,6 +118,8 @@ void ejecutar_procesos(int mm_socket) {
                 mensaje.op = CREACION;
                 mensaje.RID = p.RID;
 
+                printf("PM mandaaaaa\n");
+
                 if(send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0) {
                     MYERR(EXIT_FAILURE, "Error en el send");
                 }
