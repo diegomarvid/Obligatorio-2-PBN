@@ -55,6 +55,24 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
     return FALLO;
 }
 
+pid_t obtener_LID(pid_t pid) {
+
+    Proceso p;
+    int i;
+
+    for(i = 0; i < PROCESS_MAX; i++) {
+
+        p = lista_proceso[i];
+
+        if(p.estado != TERMINADO && p.pid == pid) {
+            return p.LID;
+        }
+    }
+
+    return FALLO;
+
+}
+
 int crear_name_pipe(char *pipe_addr) {
 
     unlink(pipe_addr);
@@ -67,25 +85,22 @@ int crear_name_pipe(char *pipe_addr) {
 
 }
 
-pid_t crear_listener(char *pipe_addr) {
+void crear_listener(char *pipe_addr, int *L_pid) {
 
-    pid_t pid_L = fork();
+    *L_pid = fork();
 
-    if(pid_L < 0) {
-        return FALLO;
+    printf("L pid: %d", *L_pid);
 
-    } else if(pid_L == 0) {
+    if(*L_pid == 0) {
         execlp("./L", "L", pipe_addr , NULL);
         exit(EXIT_FAILURE);     
-    } else{
-        return pid_L;
-    }
+    } 
 
 }
 
 
 
-pid_t crear_proceso(char cmd[]) {
+void crear_proceso(char cmd[], int *pid, int *L_pid) {
 
 
     char *comando[20];
@@ -97,35 +112,37 @@ pid_t crear_proceso(char cmd[]) {
     str_split(comando, str_aux, " ");
 
     //Creo proceso
-    pid_t pid = fork();
+    *pid = fork();
 
-    if(pid < 0) {
-        return FALLO;
-    }
+    // if(pid < 0) {
+    //     return FALLO;
+    // }
 
     char pipe_addr[100];          //Direccion para guardar el address de la pipe
     strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
     char pid_str[20];
 
-    if(pid > 0) {
+    if(*pid > 0) {
 
-        printf("\n\n[%d] Proceso creado \n\n", pid);
+        printf("\n\n[%d] Proceso creado \n\n", *pid);
 
         
-        sprintf(pid_str, "%d", pid); // Paso el pid a str para concatenarlo
+        sprintf(pid_str, "%d", *pid); // Paso el pid a str para concatenarlo
         strcat(pipe_addr, pid_str);  //Address = /tmp/pipe_2180
 
         if (crear_name_pipe(pipe_addr) == FALLO)
         {
-            return FALLO;
+            *pid = FALLO;
         }
 
-        if(crear_listener(pipe_addr) == FALLO) {
-            return FALLO;
+        crear_listener(pipe_addr, L_pid);
+
+        if(*L_pid == FALLO) {
+            *pid = FALLO;
         }
 
         
-    } else if(pid == 0) {
+    } else if(*pid == 0) {
 
         sprintf(pid_str, "%d", getpid()); // Paso el pid a str para concatenarlo
         strcat(pipe_addr, pid_str); //Address = /tmp/pipe_2180
@@ -149,8 +166,6 @@ pid_t crear_proceso(char cmd[]) {
         exit(EXIT_FAILURE);
     }
 
-    
-    return pid;
 }
 
 
@@ -158,6 +173,7 @@ void ejecutar_procesos(int mm_socket) {
     Proceso p;
     int i;
     pid_t pid;
+    pid_t L_pid;
     Mensaje mensaje = {-1, -1, "", PM};
 
     while(TRUE) {
@@ -172,7 +188,8 @@ void ejecutar_procesos(int mm_socket) {
 
             if(p.estado == CREAR) {
 
-                pid = crear_proceso(p.cmd);
+                //pid = crear_proceso(p.cmd);
+                crear_proceso(p.cmd, &pid, &L_pid);
 
                 if(pid == FALLO) {
                     lista_proceso[i].pid = TERMINADO;
@@ -181,8 +198,10 @@ void ejecutar_procesos(int mm_socket) {
                     sprintf(mensaje.data, "%d-%d", pid, FALLO);
 
                 } else {
+                    lista_proceso[i].LID = L_pid;
                     lista_proceso[i].pid = pid;
                     lista_proceso[i].estado = EJECUTANDO;
+
 
                     sprintf(mensaje.data, "%d-%d", pid, EXITO);
                 }
@@ -210,6 +229,7 @@ void ejecutar_procesos(int mm_socket) {
             if(p.estado == INVALIDO) {
                 mensaje.op = CREACION;
                 mensaje.RID = p.RID;
+                kill(p.LID,SIGKILL);
 
                 sprintf(mensaje.data, "%d-%d", p.pid, FALLO);
 
@@ -217,6 +237,11 @@ void ejecutar_procesos(int mm_socket) {
                     MYERR(EXIT_FAILURE, "Error en el send");
                 }
 
+                lista_proceso[i].estado = TERMINADO;
+            }
+ 
+            if(p.estado == ELIMINAR) {
+                kill(p.LID,SIGTERM);
                 lista_proceso[i].estado = TERMINADO;
             }
 
@@ -231,22 +256,42 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
 
     int status;
     pid_t pid;
+    
 
     pid = waitpid(-1, &status, 0);
 
     if(pid == FALLO) {
       printf("Fallo el waitpid \n");
     }
+    // } else {
+    //     char pipe_addr[100];          //Direccion para guardar el address de la pipe
+    //     strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
+
+    //     sprintf(pid_str, "%d", pid); // Paso el pid a str para concatenarlo
+    //     strcat(pipe_addr, pid_str);
+
+    //     close(pipe_addr)
+    // }
 
     printf("[Signal] status: %d \n", status);
+    
+    
+
+
+
+    
+
+
 
     if(status == EXIT_SUCCESS) {
-      cambiar_estado_proceso(pid, TERMINADO);
+      cambiar_estado_proceso(pid, ELIMINAR);
       printf("[%d] Proceso terminado \n", pid);
     } else {
       cambiar_estado_proceso(pid, INVALIDO);
       printf("[%d] Proceso invalido \n", pid);
     }
+
+    
 
 
 

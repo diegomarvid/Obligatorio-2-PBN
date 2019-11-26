@@ -12,10 +12,34 @@
 
 
 
+//----------------------INTERRUPCIONES-------------------------//
+//-------------Manjeo de la interrupcion de la muerte del hijo--------------//
+void sigTermHandler(int signum, siginfo_t *info, void *ucontext ) {
+
+   close(pipe_addr);
+   exit(EXIT_SUCCESS);
+
+}
+
+//--------------------Set del manejador de muerte del hijo-----------------//
+void sigTermSet() {
+    struct sigaction action, oldaction;
+
+    action.sa_sigaction = sigTermHandler; //Funcion a llamar
+    sigemptyset(&action.sa_mask);
+    sigfillset(&action.sa_mask); //Bloqueo todas la seniales
+    action.sa_flags = SA_NOCLDSTOP | SA_SIGINFO;
+    action.sa_restorer = NULL;
+
+    sigaction(SIGCHLD, &action, &oldaction);
+}
+
+char pipe_addr[100];
+
 int main(int argc, char const *argv[])
 {
+    sigTermSet();
     
-    char pipe_addr[100];
 
     char buffer[ENTRADA_BUFFSIZE];
 
