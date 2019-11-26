@@ -236,6 +236,15 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
 
     if(pid == FALLO) {
       printf("Fallo el waitpid \n");
+    } else {
+
+        char pipe_addr[100];          //Direccion para guardar el address de la pipe
+        strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
+        char pid_str[20];
+        sprintf(pid_str, "%d", pid); // Paso el pid a str para concatenarlo
+        strcat(pipe_addr, pid_str);  //Address = /tmp/pipe_2180
+
+        unlink(pipe_addr);
     }
 
     printf("[Signal] status: %d \n", status);
