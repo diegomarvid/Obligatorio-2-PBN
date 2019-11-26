@@ -24,8 +24,8 @@ int main(int argc, char const *argv[])
 
     Proceso *p = obtener_shm(0);
 
-    printf("Proceso cmd sistema: %s \n", p[2].cmd);
-    printf("Proceso cmd cliente: %s \n", p[3].cmd);
+    printf("Proceso cmd sistema: %s \n", p[OFFSET - 1].cmd);
+    printf("Proceso cmd cliente: %s \n", p[OFFSET].cmd);
 
     
 

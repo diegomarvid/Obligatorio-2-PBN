@@ -6,6 +6,9 @@
 #include <string.h>
 #include <error.h>
 #include <errno.h>
+#include <fcntl.h> // para el mkfifo
+#include <sys/stat.h> // para el mkfifo
+#include <sys/types.h>// para el mkfifo
 #include "constantes.h"
 #include "PM.h"
 #include "shm.c"
@@ -52,9 +55,39 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
     return FALLO;
 }
 
+int crear_name_pipe(char *pipe_addr) {
+
+    unlink(pipe_addr);
+
+    if(mkfifo(pipe_addr, 0666) == FALLO){
+        return FALLO;
+    }
+
+    return EXITO;
+
+}
+
+pid_t crear_listener(char *pipe_addr) {
+
+    pid_t pid_L = fork();
+
+    if(pid_L < 0) {
+        return FALLO;
+
+    } else if(pid_L == 0) {
+        execlp("./L", "L", pipe_addr , NULL);
+        exit(EXIT_FAILURE);     
+    } else{
+        return pid_L;
+    }
+
+}
+
 
 
 pid_t crear_proceso(char cmd[]) {
+
+
     char *comando[20];
     //Auxiliar porque la funcion split modifica
     //el array que se le pasa por parametro
@@ -63,17 +96,60 @@ pid_t crear_proceso(char cmd[]) {
     strcpy(str_aux, cmd);
     str_split(comando, str_aux, " ");
 
+    //Creo proceso
     pid_t pid = fork();
 
     if(pid < 0) {
         return FALLO;
-    } else if(pid == 0){
-        execvp(comando[0], &comando[0]);
-        exit(EXIT_FAILURE);
-    } else {
-        printf("\n\n[%d] Proceso creado \n\n", pid);
     }
 
+    char pipe_addr[100];          //Direccion para guardar el address de la pipe
+    strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
+    char pid_str[20];
+
+    if(pid > 0) {
+
+        printf("\n\n[%d] Proceso creado \n\n", pid);
+
+        
+        sprintf(pid_str, "%d", pid); // Paso el pid a str para concatenarlo
+        strcat(pipe_addr, pid_str);  //Address = /tmp/pipe_2180
+
+        if (crear_name_pipe(pipe_addr) == FALLO)
+        {
+            return FALLO;
+        }
+
+        if(crear_listener(pipe_addr) == FALLO) {
+            return FALLO;
+        }
+
+        
+    } else if(pid == 0) {
+
+        sprintf(pid_str, "%d", getpid()); // Paso el pid a str para concatenarlo
+        strcat(pipe_addr, pid_str); //Address = /tmp/pipe_2180
+
+        
+        printf("Me tranque \n");
+
+        //Se abre como RDWR para que no tranque cuando no hay lectores
+        int pipe_fd = open(pipe_addr, O_WRONLY);
+
+        printf("Me destranque \n");
+
+        if(pipe_fd == FALLO) {
+            MYERR(EXIT_FAILURE, "Error al abrir pipe para escritura");
+        }
+
+        dup2(pipe_fd, STDOUT_FILENO);
+    
+        execvp(comando[0], &comando[0]);
+
+        exit(EXIT_FAILURE);
+    }
+
+    
     return pid;
 }
 

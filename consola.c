@@ -59,8 +59,8 @@ void desplegar_menu(){
 	printf("\n\n");
 
 	printf("Las opciones del menu son:\n1-Crear proceso.\n2-Eliminar proceso.\n3-Suspender proceso.\n4-Reanudar proceso.");
-	printf("\n5-Ver. estado proceso.\n6-Ver lista de procesos.\n7-Cerrar consola\n8-Cerrar sistema.\nIngrese un numero del ");
-	printf("uno al 8\n\n");
+	printf("\n5-Ver. estado proceso.\n6-Ver lista de procesos.\n7-Cerrar consola\n8-Cerrar sistema.\n9-Ver salida proceso\nIngrese un numero del ");
+	printf("1 al 9\n\n");
 
 	return;
 }
@@ -137,6 +137,16 @@ int crear_mensaje(int opcion, char msg[]){
 			sprintf(msg, "%d-%s", opcion, data);
 
 			break;
+		case 9:
+
+			PID = readPID("Ingrese el pid del proceso a ver.");
+
+			sprintf(data, "%d", PID);
+
+			sprintf(msg, "%d-%s", opcion, data);
+
+			break;
+
 		default:
 			printf("Error, ingreso erroeneo.");
 
@@ -285,7 +295,7 @@ int main(int argc,char *argv[]){
 			if(FD_ISSET(STDIN_FILENO, &readfds)) {
 
 				//Obtengo la opcion que el desea.
-				opcion = readInt(1, 8);
+				opcion = readInt(1, 9);
 
 				//Mando a realizar tal tarea y espero su resultado.
 				if (opcion != 7) {
@@ -307,10 +317,14 @@ int main(int argc,char *argv[]){
 				} else if(r == END_OF_CONNECTION) {
 					MYERR(EXIT_FAILURE, "Se termino la conexion con el servidor");
 				}
+		
+				sscanf(respuesta,"%d-%[^'\0']s",&comunicacion,respuesta);
 
-				sscanf(respuesta,"%d-%[^'\n']s",&comunicacion,respuesta);
-
-				printf("|ADVERTENCIA|: %s\n", respuesta);
+				//Evaluar largo por que al principio y fin de conexion la pipe manda null.
+				if(strlen(respuesta) > 0) {
+					printf("|ADVERTENCIA|: %s\n", respuesta);
+				}
+				
 
 			}
 

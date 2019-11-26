@@ -4,12 +4,15 @@
 #include <string.h>
 #include <error.h>
 #include <errno.h>
+#include <fcntl.h> // para el mkfifo
+#include <sys/stat.h> // para el mkfifo
+#include <sys/types.h>// para el mkfifo
 #include "sock.c"
 #include "constantes.h"
 #include "Rp.h"
 
 
-int monitored_fd_set[2] = {-1, -1};
+int monitored_fd_set[3] = {-1, -1, -1};
 
 //Recibe un mensaje como un string y lo transforma en una estructura interna Mensaje.
 void conv_to_struct(Mensaje *mensaje, char buffer[]){
@@ -34,8 +37,26 @@ void refresh_fd_set(fd_set *fd_set_ptr) {
     FD_ZERO(fd_set_ptr);
     FD_SET(monitored_fd_set[0], fd_set_ptr);
     FD_SET(monitored_fd_set[1], fd_set_ptr);
+    FD_SET(monitored_fd_set[2], fd_set_ptr);
 }
 
+int
+get_max_fd(){
+
+    int i;
+    int max = -1;
+
+    for(i = 0 ; i < 3; i++ ){
+
+        if(monitored_fd_set[i] > max){
+
+            max = monitored_fd_set[i];
+
+        }
+    }
+
+    return max;
+}
 
 
 
@@ -116,23 +137,20 @@ int main(int argc, char const *argv[])
     //*****Variables select*******//
 
     //Maximo fd para el parametro del select
-    int max_fd = -1;
+    //int max_fd = -1;
+
+    int salida_fd = -1;
+    char salida_buffer[OUT_BUFFSIZE];
+    int pid;
 
     //Guardo fd en el array para el select
     monitored_fd_set[0] = consola_socket;
     monitored_fd_set[1] = mm_socket;
 
-    //Calculo del maximo fd
-    if(consola_socket > mm_socket) {
-        max_fd = consola_socket;
-    } else {
-        max_fd = mm_socket;
-    }
-
     fd_set readfds;
 
     //******Variables socket******//
-    int read;
+    int r;
 
     while(TRUE) {
 
@@ -140,7 +158,7 @@ int main(int argc, char const *argv[])
         refresh_fd_set(&readfds);
 
         //Realizo un select el cual nos permite saber si usuario desea realizar una accion o MM nos envia resultados.
-        select(max_fd + 1, &readfds, NULL, NULL, NULL);
+        select(get_max_fd() + 1, &readfds, NULL, NULL, NULL);
 
         if(FD_ISSET(consola_socket, &readfds)) {
 
@@ -150,14 +168,14 @@ int main(int argc, char const *argv[])
         //    }
             //*********RECIBE CONSOLA********//
 
-            read = recv(consola_socket, buffer, ENTRADA_BUFFSIZE, 0);
+            r = recv(consola_socket, buffer, ENTRADA_BUFFSIZE, 0);
 
-            if (read == ERROR_CONNECTION){
+            if (r == ERROR_CONNECTION){
                 close(consola_socket);
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
             }
-            else if (read == END_OF_CONNECTION){
+            else if (r == END_OF_CONNECTION){
                 close(consola_socket);
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con Consola\n");
@@ -169,25 +187,55 @@ int main(int argc, char const *argv[])
 
             conv_to_struct(&mensaje, buffer);
 
-            //*********MANDA A MM***********//
+            //Diferenciar si se quiere enganchar a la salida de otro proceso
 
-            if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0){
-                close(mm_socket);
-                MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
+            if(mensaje.op == LEER_SALIDA) {
+
+                //En mensaje.data esta el pid en formato string
+                char pipe_addr[100];          //Direccion para guardar el address de la pipe
+                strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
+                strcat(pipe_addr, mensaje.data); //Address = /tmp/pipe_2124
+
+                salida_fd = open(pipe_addr, O_RDONLY);
+
+                printf("Fd de la pipe: %d\n", salida_fd);
+
+                sscanf(mensaje.data, "%d", &pid);
+
+                
+                if(salida_fd == FALLO) {
+                    sprintf(salida_buffer, "[%d] %s", pid, "No se encontro el proceso\n");
+                } else{
+                    sprintf(salida_buffer, "[%d] %s", pid, "Exito al engancharse a la salida\n");    
+                }
+
+                sprintf(respuesta, "%d-%s", SINCRONICO, salida_buffer);
+
+                send(consola_socket, respuesta, sizeof(respuesta) + 1, MSG_NOSIGNAL);
+
+                monitored_fd_set[2] = salida_fd;
+
+            } else{
+
+                //*********MANDA A MM***********//
+
+                if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0){
+                    close(mm_socket);
+                    MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
+                }
             }
-
         } else if(FD_ISSET(mm_socket, &readfds)) {
 
             //*********RECIBE DE MM***********//
             //Rebice mensaje y lo formatea.
 
-            read = recv(mm_socket, &mensaje, sizeof(mensaje), 0);
+            r = recv(mm_socket, &mensaje, sizeof(mensaje), 0);
 
-            if (read == ERROR_CONNECTION){
+            if (r == ERROR_CONNECTION){
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
             }
-            else if (read == END_OF_CONNECTION){
+            else if (r == END_OF_CONNECTION){
                 close(mm_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con MM \n");
             }
@@ -215,6 +263,24 @@ int main(int argc, char const *argv[])
             }
 
             printf("[Rp]->[C] Manda: %s \n", respuesta);
+
+        } else if( FD_ISSET(salida_fd, &readfds) ){
+
+                r = read(salida_fd, salida_buffer, OUT_BUFFSIZE);
+
+                if(r == ERROR_CONNECTION) {
+                    perror("Error en la conexion con el listener");
+                } else if(r == END_OF_CONNECTION) {
+                    perror("Se termino de leer el proceso");
+                    salida_fd = -1;
+                } else{
+                    sprintf(respuesta, "%d-%s", ASINCRONICO, salida_buffer);
+                    printf("Respuesta mandada: %s\n", respuesta);
+                    send(consola_socket, respuesta , sizeof(respuesta) + 1, MSG_NOSIGNAL);
+                }
+
+                
+
         }
 
    }

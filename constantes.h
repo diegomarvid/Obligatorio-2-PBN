@@ -8,6 +8,7 @@ enum { FALSE , TRUE };
 #define PROCESS_MAX 100
 #define SHM_ADDR "/tmp/shm_pbn"
 #define PROJ_ID 'S'
+#define PIPE_ADDR "/tmp/pipe_"
 
 //pid maximo tiene 9 digitos, es el size asociado a su str equivalente
 #define PID_SIZE 9
@@ -23,6 +24,9 @@ enum { FALSE , TRUE };
 //Entrada es del tipo
 /*               op-cmd                     */
 #define ENTRADA_BUFFSIZE PID_SIZE + 1 + CMD_SIZE
+
+//Buffer para leer y enviar salida estandar de un proceso
+#define OUT_BUFFSIZE 200
 
 
 #define MYERR(status, txt) error_at_line(status, errno, __FILE__, __LINE__ - 1, txt)
@@ -54,9 +58,9 @@ typedef struct {
 
 #define SYSTEM_PROCESS_SIZE 3
 
-#define TOTAL_PROCESS SYSTEM_PROCESS_SIZE + PROCESS_MAX
+#define TOTAL_PROCESS (SYSTEM_PROCESS_SIZE + PROCESS_MAX)
 
-#define SHM_SIZE sizeof(Proceso) * TOTAL_PROCESS
+#define SHM_SIZE  (sizeof(Proceso) * TOTAL_PROCESS)
 
 
 
@@ -64,7 +68,7 @@ typedef struct {
 #define OFFSET 3
 
 //Lista de operaciones a ejecutar
-enum { CREACION = 1, ELIMINACION, SUSPENCION, RENAUDAR, ESTADO, LISTA, CERRAR_CONSOLA, CERRAR_SISTEMA};
+enum { CREACION = 1, ELIMINACION, SUSPENCION, RENAUDAR, ESTADO, LISTA, CERRAR_CONSOLA, CERRAR_SISTEMA, LEER_SALIDA};
 
 //Posibles estados de un proceso
 enum { INVALIDO = - 1 , CREAR, EJECUTANDO , SUSPENDIDO , ELIMINAR , TERMINADO};
