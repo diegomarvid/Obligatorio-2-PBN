@@ -14,7 +14,7 @@ enum { FALSE , TRUE };
 
 //Caso maximo de data es cuando se envia una lista:
 /*    cantidad de procesos * pid-cmd'27'    */
-#define DATA_SIZE PROCESS_MAX * (PID_SIZE + 1 + CMD_SIZE + 1) 
+#define DATA_SIZE PROCESS_MAX * (PID_SIZE + 1 + CMD_SIZE + 1)
 
 //Respuesta es del tipo
 /*          sincrono/asicrono-data          */
@@ -35,7 +35,7 @@ typedef struct {
 
     char data[DATA_SIZE];
 
-    int id; 
+    int id;
 
 } Mensaje;
 
@@ -52,7 +52,13 @@ typedef struct {
 
 } Proceso;
 
-#define SHM_SIZE sizeof(Proceso) * PROCESS_MAX
+#define SYSTEM_PROCESS_SIZE 3
+
+#define TOTAL_PROCESS SYSTEM_PROCESS_SIZE + PROCESS_MAX
+
+#define SHM_SIZE sizeof(Proceso) * TOTAL_PROCESS
+
+
 
 //Offser para SHM
 #define OFFSET 3
@@ -72,7 +78,7 @@ enum { RP , PM , MM };
 enum { SINCRONICO, ASINCRONICO };
 
 //Errores de socket
-enum {ERROR_CONNECTION = -1, END_OF_CONNECTION};
+enum { ERROR_CONNECTION = -1 , END_OF_CONNECTION };
 
 
 

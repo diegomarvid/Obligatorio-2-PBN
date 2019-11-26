@@ -13,12 +13,18 @@ void inicializar_shm(Proceso *lista_proceso) {
 
     int i;
 
-    for(i = 0; i < PROCESS_MAX; i++) {
+    for(i = 0; i < TOTAL_PROCESS; i++) {
 
         lista_proceso[i].RID = INVALIDO;
         lista_proceso[i].pid = INVALIDO;
         lista_proceso[i].estado = TERMINADO;
-        strcpy(lista_proceso[i].cmd, "Otte se la come");
+
+        if(i < 3) {
+            strcpy(lista_proceso[i].cmd, "Proceso del sistema");
+        } else {
+            strcpy(lista_proceso[i].cmd, "Proceso del cliente");
+        }
+        
 
     }
 

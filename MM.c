@@ -300,7 +300,7 @@ int main(int argc, char const *argv[]){
     Mensaje mensaje;
     Nodo *nodo_fd;
 
-    lista_proceso = obtener_shm(0);
+    lista_proceso = obtener_shm(OFFSET);
 
     intitiaze_monitor_fd_set();
 

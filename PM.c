@@ -53,6 +53,7 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
 }
 
 
+
 pid_t crear_proceso(char cmd[]) {
     char *comando[20];
     //Auxiliar porque la funcion split modifica
@@ -103,11 +104,11 @@ void ejecutar_procesos(int mm_socket) {
 
                     sprintf(mensaje.data, "%d-%d", pid, FALLO);
 
-                } else {      
+                } else {
                     lista_proceso[i].pid = pid;
                     lista_proceso[i].estado = EJECUTANDO;
-                   
-                    sprintf(mensaje.data, "%d-%d", pid, EXITO);               
+
+                    sprintf(mensaje.data, "%d-%d", pid, EXITO);
                 }
 
                 mensaje.op = CREACION;
@@ -135,14 +136,14 @@ void ejecutar_procesos(int mm_socket) {
                 mensaje.RID = p.RID;
 
                 sprintf(mensaje.data, "%d-%d", p.pid, FALLO);
-                
+
                 if(send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0) {
                     MYERR(EXIT_FAILURE, "Error en el send");
                 }
 
                 lista_proceso[i].estado = TERMINADO;
             }
- 
+
         }
     }
 }
@@ -211,7 +212,7 @@ int main(int argc, char const *argv[])
 
     printf("Connection established with MM \n");
 
-    lista_proceso = obtener_shm(0);
+    lista_proceso = obtener_shm(OFFSET);
 
     ejecutar_procesos(mm_socket);
 
