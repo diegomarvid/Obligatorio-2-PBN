@@ -140,7 +140,7 @@ int main(int argc, char const *argv[])
     //int max_fd = -1;
 
     int salida_fd = -1;
-    char salida_buffer[DATA_SIZE];
+    char salida_buffer[OUT_BUFFSIZE];
     int pid;
 
     //Guardo fd en el array para el select
@@ -195,11 +195,6 @@ int main(int argc, char const *argv[])
                 char pipe_addr[100];          //Direccion para guardar el address de la pipe
                 strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
                 strcat(pipe_addr, mensaje.data); //Address = /tmp/pipe_2124
-
-                //Cierro el anterior
-                close(salida_fd);
-
-                printf("Llegue hasta aca putosss\n");
 
                 salida_fd = open(pipe_addr, O_RDONLY);
 
@@ -271,17 +266,12 @@ int main(int argc, char const *argv[])
 
         } else if( FD_ISSET(salida_fd, &readfds) ){
 
-                
-
-                r = read(salida_fd, salida_buffer, DATA_SIZE);
+                r = read(salida_fd, salida_buffer, OUT_BUFFSIZE);
 
                 if(r == ERROR_CONNECTION) {
                     perror("Error en la conexion con el listener");
-                    close(salida_fd);
-                    salida_fd = -1;
                 } else if(r == END_OF_CONNECTION) {
                     perror("Se termino de leer el proceso");
-                    close(salida_fd);
                     salida_fd = -1;
                 } else{
                     sprintf(respuesta, "%d-%s", ASINCRONICO, salida_buffer);

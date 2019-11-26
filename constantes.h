@@ -26,7 +26,7 @@ enum { FALSE , TRUE };
 #define ENTRADA_BUFFSIZE PID_SIZE + 1 + CMD_SIZE
 
 //Buffer para leer y enviar salida estandar de un proceso
-#define OUT_BUFFSIZE 100
+#define OUT_BUFFSIZE 200
 
 
 #define MYERR(status, txt) error_at_line(status, errno, __FILE__, __LINE__ - 1, txt)
@@ -46,8 +46,6 @@ typedef struct {
 typedef struct {
 
     pid_t RID;
-
-    pid_t LID;
 
     int estado;
 
