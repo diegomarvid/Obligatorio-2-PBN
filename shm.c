@@ -16,6 +16,7 @@ void inicializar_shm(Proceso *lista_proceso) {
     for(i = 0; i < TOTAL_PROCESS; i++) {
 
         lista_proceso[i].RID = INVALIDO;
+        lista_proceso[i].LID = INVALIDO;
         lista_proceso[i].pid = INVALIDO;
         lista_proceso[i].estado = TERMINADO;
 

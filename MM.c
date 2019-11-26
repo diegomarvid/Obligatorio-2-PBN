@@ -300,12 +300,7 @@ int main(int argc, char const *argv[]){
     Mensaje mensaje;
     Nodo *nodo_fd;
 
-    lista_proceso = obtener_shm(OFFSET);
-
-    intitiaze_monitor_fd_set();
-
-    //Lista dinamica para guardar cada Rp con su RID y fd asociado
-    lista_fd = dynList_crear();
+    /* ABRE SOCKET */
 
     //Si hay un socket abierto con el mismo nombre cerralo
     unlink(SOCKET_NAME);
@@ -320,7 +315,20 @@ int main(int argc, char const *argv[]){
 
     }
 
-    add_to_monitored_fd_set(connection_socket);
+    intitiaze_monitor_fd_set();
+
+    add_to_monitored_fd_set(connection_socket); //Array monitero select
+
+    /*  INICIALIZAR SISTEMA  */
+
+
+
+    lista_proceso = obtener_shm(OFFSET); 
+
+    
+
+    //Lista dinamica para guardar cada Rp con su RID y fd asociado
+    lista_fd = dynList_crear();
 
 
     while (TRUE){
