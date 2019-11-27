@@ -16,8 +16,10 @@ void inicializar_shm(Proceso *lista_proceso) {
     for(i = 0; i < TOTAL_PROCESS; i++) {
 
         lista_proceso[i].RID = INVALIDO;
+        lista_proceso[i].LID = TERMINADO;
         lista_proceso[i].pid = INVALIDO;
         lista_proceso[i].estado = TERMINADO;
+        
 
         if(i < 3) {
             strcpy(lista_proceso[i].cmd, "Proceso del sistema");

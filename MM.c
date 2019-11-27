@@ -140,6 +140,7 @@ int agregar_proceso(char cmd[], int RID){
     if(indice != FALLO) {
 
         lista_proceso[indice].RID = RID;
+        lista_proceso[indice].LID = INVALIDO;
         lista_proceso[indice].pid = INVALIDO;
         lista_proceso[indice].estado = CREAR;
         strcpy(lista_proceso[indice].cmd, cmd);
@@ -226,17 +227,18 @@ void obtener_lista(Mensaje *mensaje){
 
 
 
-void ejecutar_operacion(Mensaje *mensaje) {
+void ejecutar_operacion(Mensaje *mensaje, int socket_actual) {
 
 
     //Crear proceso
     if(mensaje->op == CREACION) {
 
+        mensaje->id = MM;
         if(agregar_proceso(mensaje->data, mensaje->RID) == FALLO) {
-            printf("Error al agregar proceso \n");
+            strcpy(mensaje->data,"Error al crear, capacidad maxima de procesos alcanzada.\n");
+            send(socket_actual, mensaje, sizeof(*mensaje), MSG_NOSIGNAL);
         }
 
-        mensaje->id = MM;
     }
     if(mensaje->op == ELIMINACION) {
         int pid;
@@ -393,7 +395,7 @@ int main(int argc, char const *argv[]){
                             printf("id: %d \n", mensaje.id);
 
                             //Realiza la operacion y genera el mensaje pertinente.
-                            ejecutar_operacion(&mensaje);
+                            ejecutar_operacion(&mensaje, socket_actual);
 
                             //Envio respuesta a Rp
                             //El caso de creacion no se envia porque el encargado

@@ -47,12 +47,13 @@ typedef struct {
 
     pid_t RID;
 
+    pid_t LID;
+
     int estado;
 
     pid_t pid;
 
     char cmd[CMD_SIZE];
-
 
 } Proceso;
 

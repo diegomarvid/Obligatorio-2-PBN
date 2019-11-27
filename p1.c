@@ -7,7 +7,7 @@ int main(int argc, char const *argv[])
 {
     int i;
 
-    sleep(5);
+    sleep(20);
 
     for(i = 0; i < 6; i++) {
         printf("[%d] %d ~ \n", getpid(), i);

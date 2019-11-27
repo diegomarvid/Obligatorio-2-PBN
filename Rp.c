@@ -178,7 +178,7 @@ int main(int argc, char const *argv[])
             else if (r == END_OF_CONNECTION){
                 close(consola_socket);
                 close(mm_socket);
-                MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con Consola\n");
+                MYERR(EXIT_SUCCESS, "[Rp] Conexion finalizada con Consola\n");
             }
 
             printf("[Rp] Recibe de consola: %s \n", buffer);
