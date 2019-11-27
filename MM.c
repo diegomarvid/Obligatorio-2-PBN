@@ -4,6 +4,9 @@
 #include <signal.h>
 #include <error.h>
 #include <errno.h>
+#include <fcntl.h>           /* For O_* constants */
+#include <sys/stat.h> 
+#include <semaphore.h>
 #include "constantes.h"
 #include "MM.h"
 #include "DynList.c"
@@ -14,6 +17,7 @@
 
 int monitored_fd_set[MAX_CLIENTS];
 Proceso *lista_proceso;
+sem_t *sem;
 DynList *lista_fd;
 
 
@@ -110,7 +114,9 @@ int request_process_space() {
     int i;
 
     for(i = 0; i < PROCESS_MAX; i++) {
+        sem_wait(sem);
         p = lista_proceso[i];
+        sem_post(sem);
         if(p.estado == TERMINADO){
             return i;
         }
@@ -122,11 +128,17 @@ int request_process_space() {
 
 int obtener_estado(pid_t pid) {
 
+  Proceso p;  
   int i;
 
   for(i = 0; i < PROCESS_MAX; i++) {
-      if(lista_proceso[i].pid == pid && lista_proceso[i].estado != TERMINADO) {
-        return lista_proceso[i].estado;
+      
+      sem_wait(sem);
+      p = lista_proceso[i];
+      sem_post(sem);
+      
+      if(p.pid == pid && p.estado != TERMINADO) {       
+        return p.estado;
       }
   }
 
@@ -139,11 +151,15 @@ int agregar_proceso(char cmd[], int RID){
 
     if(indice != FALLO) {
 
+        sem_wait(sem);
+
         lista_proceso[indice].RID = RID;
         lista_proceso[indice].LID = INVALIDO;
         lista_proceso[indice].pid = INVALIDO;
         lista_proceso[indice].estado = CREAR;
         strcpy(lista_proceso[indice].cmd, cmd);
+
+        sem_post(sem);
 
         return indice;
 
@@ -161,11 +177,17 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
 
     for(i = 0; i < PROCESS_MAX; i++) {
 
+        sem_wait(sem);
         p = lista_proceso[i];
+        sem_post(sem);
 
         if(p.estado != TERMINADO) {
             if(p.pid == pid) {
+
+                sem_wait(sem);
                 lista_proceso[i].estado = estado;
+                sem_post(sem);
+
                 return EXITO;
             }
         }
@@ -204,7 +226,9 @@ void obtener_lista(Mensaje *mensaje){
 
     for(i = 0; i < PROCESS_MAX; i++) {
 
+        sem_wait(sem);
         p = lista_proceso[i];
+        sem_post(sem);
 
         if(p.RID == mensaje->RID && p.estado != TERMINADO && p.estado != INVALIDO) {
             cantidad_encontrados++;
@@ -293,14 +317,23 @@ void ejecutar_operacion(Mensaje *mensaje, int socket_actual) {
 
 int main(int argc, char const *argv[]){
 
+    //Variables socket
     int data_socket;
     int connection_socket;
     fd_set readfds;
     int i;
     int socket_actual = -1;
 
+    //Mensaje de comunicacion
     Mensaje mensaje;
+    
+    //Nodo para utilizar dynlist de fd y RID
     Nodo *nodo_fd;
+
+    sem_unlink(SEM_ADDR);    
+    sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
+
+
 
     lista_proceso = obtener_shm(OFFSET);
 
@@ -314,6 +347,8 @@ int main(int argc, char const *argv[]){
 
     //Master socket fd para aceptar conexiones
     connection_socket = sock_listen_un();
+
+
 
 
     if( connection_socket < 0 ){

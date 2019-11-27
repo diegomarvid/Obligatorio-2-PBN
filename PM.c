@@ -8,7 +8,9 @@
 #include <errno.h>
 #include <fcntl.h> // para el mkfifo
 #include <sys/stat.h> // para el mkfifo
+#include <semaphore.h>
 #include <sys/types.h>// para el mkfifo
+
 #include "constantes.h"
 #include "PM.h"
 #include "shm.c"
@@ -16,6 +18,8 @@
 
 
 volatile Proceso *lista_proceso;
+sem_t *sem;
+
 
 /*  Funcion para separar un string en un array de string por un delimitador  */
 
@@ -42,11 +46,17 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
 
     for(i = 0; i < PROCESS_MAX; i++) {
 
+        sem_wait(sem);
         p = lista_proceso[i];
+        sem_post(sem);
 
         if(p.estado != TERMINADO) {
             if(p.pid == pid) {
+
+                sem_wait(sem);
                 lista_proceso[i].estado = estado;
+                sem_post(sem);
+
                 return EXITO;
             }
         }
@@ -164,7 +174,9 @@ void ejecutar_procesos(int mm_socket) {
 
         for(i = 0; i < PROCESS_MAX; i++) {
 
+            sem_wait(sem);
             p = lista_proceso[i];
+            sem_post(sem);
 
             //CREAR PROCESO
             //Se encarga de hacer fork y despues evaluar
@@ -174,15 +186,22 @@ void ejecutar_procesos(int mm_socket) {
 
                 pid = crear_proceso(p.cmd);
 
-                if(pid == FALLO) {
-                    lista_proceso[i].pid = TERMINADO;
-                    printf("Error en el fork \n");
 
+                if(pid == FALLO) {
+
+                    sem_wait(sem);
+                    lista_proceso[i].pid = TERMINADO;
+                    sem_post(sem);
+
+                    printf("Error en el fork \n");
                     sprintf(mensaje.data, "%d-%d", pid, FALLO);
 
                 } else {
+
+                    sem_wait(sem);
                     lista_proceso[i].pid = pid;
                     lista_proceso[i].estado = EJECUTANDO;
+                    sem_post(sem);
 
                     sprintf(mensaje.data, "%d-%d", pid, EXITO);
                 }
@@ -217,7 +236,9 @@ void ejecutar_procesos(int mm_socket) {
                     MYERR(EXIT_FAILURE, "Error en el send");
                 }
 
+                sem_wait(sem);
                 lista_proceso[i].estado = TERMINADO;
+                sem_post(sem);
             }
 
         }
@@ -287,6 +308,8 @@ int main(int argc, char const *argv[])
 
     //Seteo interrupciones para Child
     sigChildSet();
+
+    sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
 
     int mm_socket;
     mm_socket = sock_connect_un();

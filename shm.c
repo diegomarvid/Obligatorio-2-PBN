@@ -3,11 +3,21 @@
 #include <string.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <fcntl.h>           /* For O_* constants */
+#include <sys/stat.h>        /* For mode constants */
+#include <semaphore.h>
 #include "constantes.h"
 #include "shm.h"
 
+sem_t *sem;
 
 void inicializar_shm(Proceso *lista_proceso) {
+
+    sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
+
+    if(sem == SEM_FAILED) {
+        perror("Error en el semaforo");
+    }
 
     //p[i] = *(p + i)
 
@@ -15,6 +25,7 @@ void inicializar_shm(Proceso *lista_proceso) {
 
     for(i = 0; i < TOTAL_PROCESS; i++) {
 
+        sem_wait(sem);
         lista_proceso[i].RID = INVALIDO;
         lista_proceso[i].LID = TERMINADO;
         lista_proceso[i].pid = INVALIDO;
@@ -26,7 +37,7 @@ void inicializar_shm(Proceso *lista_proceso) {
         } else {
             strcpy(lista_proceso[i].cmd, "Proceso del cliente");
         }
-        
+        sem_post(sem);
 
     }
 

@@ -9,6 +9,7 @@ enum { FALSE , TRUE };
 #define SHM_ADDR "/tmp/shm_pbn"
 #define PROJ_ID 'S'
 #define PIPE_ADDR "/tmp/pipe_"
+#define SEM_ADDR "sem_pbn"
 
 //pid maximo tiene 9 digitos, es el size asociado a su str equivalente
 #define PID_SIZE 9
