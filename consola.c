@@ -317,12 +317,14 @@ int main(int argc,char *argv[]){
 				} else if(r == END_OF_CONNECTION) {
 					MYERR(EXIT_FAILURE, "Se termino la conexion con el servidor");
 				}
+
+				//printf("%s",respuesta);
 		
 				sscanf(respuesta,"%d-%[^'\v']s",&comunicacion,respuesta);
 				
 				//Evaluar largo por que al principio y fin de conexion la pipe manda null.
 				if(strlen(respuesta) > 0) {
-					printf("|ADVERTENCIA|: %s\n", respuesta);
+					printf("%s", respuesta);
 				}
 				
 

@@ -281,10 +281,11 @@ void ejecutar_operacion(Mensaje *mensaje, int socket_actual) {
         sscanf(mensaje->data, "%d", &pid);
 
         if (cambiar_estado_proceso(pid, SUSPENDIDO) == FALLO){
-            strcpy(mensaje->data,"Error al suspender proceso.\n");
+            sprintf(mensaje->data,"[%d] Error al suspender proceso.\n", pid);
         }else{
-            strcpy(mensaje->data,"Exito al suspender proceso.\n");
+            sprintf(mensaje->data,"[%d] Proceso suspendido.\n", pid);
         }
+
         mensaje->id = MM;
     }
 
@@ -293,10 +294,11 @@ void ejecutar_operacion(Mensaje *mensaje, int socket_actual) {
         sscanf(mensaje->data, "%d", &pid);
 
         if (cambiar_estado_proceso(pid, EJECUTANDO) == FALLO){
-            strcpy(mensaje->data,"Error al reanudar proceso.\n");
+            sprintf(mensaje->data,"[%d] Error al reanudar proceso.\n", pid);
         }else{
-            strcpy(mensaje->data,"Exito al reanudar proceso.\n");
+            sprintf(mensaje->data,"[%d] Proceso reanudado.\n", pid);
         }
+
         mensaje->id = MM;
     }
 

@@ -266,6 +266,8 @@ int main(int argc, char const *argv[])
 
         } else if( FD_ISSET(salida_fd, &readfds) ){
 
+                do{
+
                 r = read(salida_fd, salida_buffer, OUT_BUFFSIZE);
 
                 if(r == ERROR_CONNECTION) {
@@ -279,6 +281,8 @@ int main(int argc, char const *argv[])
                     printf("Respuesta mandada: %s\n", respuesta);
                     send(consola_socket, respuesta , sizeof(respuesta) + 1, MSG_NOSIGNAL);
                 }
+
+                } while( r != END_OF_CONNECTION);
 
                 
 
