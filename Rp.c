@@ -178,7 +178,7 @@ int main(int argc, char const *argv[])
             else if (r == END_OF_CONNECTION){
                 close(consola_socket);
                 close(mm_socket);
-                MYERR(EXIT_SUCCESS, "[Rp] Conexion finalizada con Consola\n");
+                MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con Consola\n");
             }
 
             printf("[Rp] Recibe de consola: %s \n", buffer);
@@ -270,6 +270,7 @@ int main(int argc, char const *argv[])
 
                 if(r == ERROR_CONNECTION) {
                     perror("Error en la conexion con el listener");
+                    salida_fd = -1;
                 } else if(r == END_OF_CONNECTION) {
                     perror("Se termino de leer el proceso");
                     salida_fd = -1;

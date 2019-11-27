@@ -77,25 +77,20 @@ int crear_name_pipe(char *pipe_addr) {
 
 }
 
-pid_t crear_listener(char *pipe_addr) {
+void crear_listener(char *pipe_addr, int *L_pid) {
 
-    pid_t pid_L = fork();
+    *L_pid = fork();
 
-    if(pid_L < 0) {
-        return FALLO;
-
-    } else if(pid_L == 0) {
+    if(*L_pid == 0) {
         execlp("./L", "L", pipe_addr , NULL);
         exit(EXIT_FAILURE);     
-    } else{
-        return pid_L;
-    }
+    } 
 
 }
 
 
 
-pid_t crear_proceso(char cmd[]) {
+pid_t crear_proceso(char cmd[], int *L_pid) {
 
 
     char *comando[20];
@@ -109,13 +104,11 @@ pid_t crear_proceso(char cmd[]) {
     //Creo proceso
     pid_t pid = fork();
 
-    if(pid < 0) {
-        return FALLO;
-    }
-
     char pipe_addr[100];          //Direccion para guardar el address de la pipe
     strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
     char pid_str[20];
+
+    
 
     if(pid > 0) {
 
@@ -130,9 +123,13 @@ pid_t crear_proceso(char cmd[]) {
             return FALLO;
         }
 
-        if(crear_listener(pipe_addr) == FALLO) {
+        crear_listener(pipe_addr, L_pid);
+
+        if(*L_pid == FALLO) {
             return FALLO;
         }
+
+        return pid;
 
         
     } else if(pid == 0) {
@@ -157,10 +154,12 @@ pid_t crear_proceso(char cmd[]) {
         execvp(comando[0], &comando[0]);
 
         exit(EXIT_FAILURE);
+    } else{
+        return FALLO;
     }
 
-    
-    return pid;
+   
+
 }
 
 
@@ -168,6 +167,7 @@ void ejecutar_procesos(int mm_socket) {
     Proceso p;
     int i;
     pid_t pid;
+    pid_t L_pid;
     Mensaje mensaje = {-1, -1, "", PM};
 
     while(TRUE) {
@@ -184,13 +184,13 @@ void ejecutar_procesos(int mm_socket) {
 
             if(p.estado == CREAR) {
 
-                pid = crear_proceso(p.cmd);
-
+                pid = crear_proceso(p.cmd, &L_pid);
 
                 if(pid == FALLO) {
 
                     sem_wait(sem);
-                    lista_proceso[i].pid = TERMINADO;
+                    lista_proceso[i].pid = INVALIDO;
+                    lista_proceso[i].estado = TERMINADO;
                     sem_post(sem);
 
                     printf("Error en el fork \n");
@@ -201,6 +201,7 @@ void ejecutar_procesos(int mm_socket) {
                     sem_wait(sem);
                     lista_proceso[i].pid = pid;
                     lista_proceso[i].estado = EJECUTANDO;
+                    lista_proceso[i].LID = L_pid;
                     sem_post(sem);
 
                     sprintf(mensaje.data, "%d-%d", pid, EXITO);
@@ -220,6 +221,14 @@ void ejecutar_procesos(int mm_socket) {
                 kill(p.pid, SIGSTOP);
             }
 
+            if(p.estado == ELIMINAR) {
+                kill(p.pid, SIGKILL);
+                kill(p.LID, SIGKILL);
+                sem_wait(sem);
+                lista_proceso[i].estado = TERMINADO;
+                sem_post(sem);               
+            }
+
             //Cuando un proceso muere con status de error
             //se cambia su estado a invalido, es por esto
             //que si se encuentra que un proceso murio
@@ -235,6 +244,8 @@ void ejecutar_procesos(int mm_socket) {
                 if(send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0) {
                     MYERR(EXIT_FAILURE, "Error en el send");
                 }
+
+                kill(p.LID, SIGKILL);
 
                 sem_wait(sem);
                 lista_proceso[i].estado = TERMINADO;
@@ -271,7 +282,7 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
     printf("[Signal] status: %d \n", status);
 
     if(status == EXIT_SUCCESS) {
-      cambiar_estado_proceso(pid, TERMINADO);
+      cambiar_estado_proceso(pid, ELIMINAR);
       printf("[%d] Proceso terminado \n", pid);
     } else {
       cambiar_estado_proceso(pid, INVALIDO);

@@ -269,10 +269,10 @@ void ejecutar_operacion(Mensaje *mensaje, int socket_actual) {
         //En data viene el PID del proceso a eliminar en formato str
         sscanf(mensaje->data, "%d", &pid);
 
-        if (cambiar_estado_proceso(pid, TERMINADO) == FALLO){
-            strcpy(mensaje->data,"Error al eliminar proceso.\n");
+        if (cambiar_estado_proceso(pid, ELIMINAR) == FALLO){
+            sprintf(mensaje->data,"[%d] Error al eliminar proceso.\n", pid);
         }else{
-            strcpy(mensaje->data,"Exito al eliminar proceso.\n");
+            sprintf(mensaje->data,"[%d] Proceso terminado.\n", pid);
         }
         mensaje->id = MM;
     }
@@ -437,7 +437,9 @@ int main(int argc, char const *argv[]){
                             //de crear un proceso es PM y es el responsable de enviar
                             //a MM el resultado de la creacion
                             if(mensaje.op != CREACION) {
-                                send(socket_actual, &mensaje, sizeof(mensaje), MSG_NOSIGNAL);
+                                if(send(socket_actual, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0){
+                                    perror("Error en el send");
+                                }
                             }
 
                             printf("[MM] envia a Rp: \n");

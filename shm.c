@@ -12,7 +12,8 @@
 sem_t *sem;
 
 void inicializar_shm(Proceso *lista_proceso) {
-
+    
+    sem_unlink(SEM_ADDR);
     sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
 
     if(sem == SEM_FAILED) {
