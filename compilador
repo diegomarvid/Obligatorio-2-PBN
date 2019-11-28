@@ -1,6 +1,4 @@
 #!/bin/bash
-gcc -Wall -pthread tester.c -o tester
-./tester
 gcc -Wall L.c -o L
 gcc -Wall p1.c -o p1
 gcc -Wall -pthread MM.c -o MM
@@ -8,3 +6,4 @@ gcc -Wall -pthread PM.c -o PM
 gcc -Wall R.c -o R
 gcc -Wall Rp.c -o Rp
 gcc -Wall consola.c -o consola
+./MM

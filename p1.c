@@ -9,9 +9,8 @@ int main(int argc, char const *argv[])
 
     sleep(10);
 
-    for(i = 0; i < 50; i++) {
+    for(i = 0; i < 1000; i++) {
         printf("[%d] %d ~ \n", getpid(), i);
-        //sleep(1);
     }
 
     //execl("dasdasdd", "sadsd", NULL);

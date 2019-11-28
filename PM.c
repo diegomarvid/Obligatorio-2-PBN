@@ -78,12 +78,12 @@ int crear_name_pipe(char *pipe_addr) {
 
 }
 
-void crear_listener(char *pipe_addr, int *L_pid) {
+void crear_listener(char *pid_str, int *L_pid) {
 
     *L_pid = fork();
 
     if(*L_pid == 0) {
-        execlp("./L", "L", pipe_addr , NULL);
+        execlp("./L", "L", pid_str , NULL);
         exit(EXIT_FAILURE);     
     } 
 
@@ -124,7 +124,7 @@ pid_t crear_proceso(char cmd[], int *L_pid) {
             return FALLO;
         }
 
-        crear_listener(pipe_addr, L_pid);
+        crear_listener(pid_str, L_pid);
 
         if(*L_pid == FALLO) {
             return FALLO;
@@ -159,7 +159,6 @@ pid_t crear_proceso(char cmd[], int *L_pid) {
         return FALLO;
     }
 
-   
 
 }
 
@@ -225,9 +224,9 @@ void ejecutar_procesos(int mm_socket) {
             if(p.estado == ELIMINAR) {
                 kill(p.pid, SIGKILL);
 
-                if(kill(p.LID, SIGKILL)==-1){
-                        perror("Error en eliminar L\n");
-                }
+                // if(kill(p.LID, SIGTERM)==-1){
+                //         perror("Error en eliminar L\n");
+                // }
 
                 sem_wait(sem);
                 lista_proceso[i].estado = TERMINADO;
@@ -250,9 +249,9 @@ void ejecutar_procesos(int mm_socket) {
                     MYERR(EXIT_FAILURE, "Error en el send");
                 }
 
-                if(kill(p.LID, SIGKILL)==-1){
-                        perror("Error en eliminar L\n");
-                }
+                // if(kill(p.LID, SIGTERM)==-1){
+                //         perror("Error en eliminar L\n");
+                // }
 
                 sem_wait(sem);
                 lista_proceso[i].estado = TERMINADO;
@@ -319,6 +318,8 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
         sem_wait(sem);
     }
 
+    printf("El semaforo tiene un valor:%d\n",semval);
+
 }
 
 void sigChildSet() {
@@ -370,7 +371,7 @@ int main(int argc, char const *argv[])
     sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
 
     int mm_socket;
-    mm_socket = sock_connect_un();
+    mm_socket = sock_connect_un(SOCKET_NAME);
 
     if( mm_socket < 0 ){
         MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");

@@ -5,9 +5,9 @@
 
 pid_t crear_Rp(int sockfd,int socket); // Asignar conexion a R' con consola
 
-int cerrar_lista_Rp(void); //Eliminar todos los R' al cerrar el sistema
+void cerrar_lista_Rp(void); //Eliminar todos los R' al cerrar el sistema
 
-int eliminar_Rp(void); //Eliminar R' de la lista al cierre de conexion
+void eliminar_Rp(void); //Eliminar R' de la lista al cierre de conexion
 
 void sigChildHandler(int signum, siginfo_t *info, void *ucontext );
 

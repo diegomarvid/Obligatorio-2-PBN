@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "constantes.h": "c"
+        "constantes.h": "c",
+        "pm.h": "c"
     }
 }

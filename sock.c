@@ -9,13 +9,7 @@
 #include "sock.h"
 
 
-#define MAX_CLIENTS 20
-#define PORT 3045
-#define SERVERHOST "127.0.0.1"
-#define SOCKET_NAME "/tmp/PBN"
-
-
-int sock_listen_un (){
+int sock_listen_un (char *socketaddr){
 
     int connection_socket;
 
@@ -38,7 +32,7 @@ int sock_listen_un (){
 
     name.sun_family = AF_UNIX;
 
-    strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
+    strncpy(name.sun_path, socketaddr, sizeof(name.sun_path) - 1);
 
      /* Do the binding */
     if(bind(connection_socket, (const struct sockaddr *) &name, sizeof(name)) < 0){
@@ -168,7 +162,7 @@ int sock_open_in(int sock) {
 }
 
 
-int sock_connect_un() {
+int sock_connect_un(char *sockadrr) {
 
     int sock;
 
@@ -189,13 +183,14 @@ int sock_connect_un() {
         /* Connect socket to socket address */
 
         addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, SOCKET_NAME, sizeof(addr.sun_path) - 1);
+        strncpy(addr.sun_path, sockadrr, sizeof(addr.sun_path) - 1);
 
            /* Do connect */
         if(connect(sock, (const struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1) {
 
             perror("connect (client)");
-            exit(EXIT_FAILURE);
+            return FALLO;
+            //exit(EXIT_FAILURE);
 
         }
 

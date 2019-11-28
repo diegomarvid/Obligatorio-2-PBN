@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <fcntl.h>           /* For O_* constants */
 #include <sys/stat.h> 
+#include <sys/wait.h>
+#include <sys/types.h>
 #include <semaphore.h>
 #include "constantes.h"
 #include "MM.h"
@@ -19,6 +21,7 @@ int monitored_fd_set[MAX_CLIENTS];
 Proceso *lista_proceso;
 sem_t *sem;
 DynList *lista_fd;
+volatile int sistema_cerrado = FALSE;
 
 
 /*Remove all the FDs, if any, from the the array*/
@@ -313,6 +316,10 @@ void ejecutar_operacion(Mensaje *mensaje, int socket_actual) {
     if(mensaje->op == LISTA){
         obtener_lista(mensaje);
     }
+
+    if(mensaje->op == CERRAR_SISTEMA){
+        sistema_cerrado = TRUE;
+    }
 }
 
 
@@ -392,6 +399,93 @@ void iniciar_sistema(int connection_socket) {
 
 }
 
+void cerrar_proceso(pid_t pid, int tiempo) {
+
+    int status;
+    int estado;
+
+    printf("[MM] Envio signal de terminate a %d \n", pid);
+    
+
+    if(kill(pid, SIGTERM) == -1) {
+        perror("Error en SIGTERM \n");
+    }
+
+    sleep(tiempo);
+
+    estado = waitpid(pid, &status, WNOHANG);
+
+    if(estado == 0) {
+    
+        printf("[MM] Estas demorando mucho... \n");
+        printf("[MM] Envio signal de kill a %d \n", pid);
+
+        if(kill(pid, SIGKILL) == -1) {
+            perror("Error en SIGKILL \n");
+        }
+        
+    } else if(estado == -1) {
+        //Si SIGTERM anduvo da este error, deberia manejarlo distinto
+        perror("Error en waitpid WNOHANG \n");
+    } else {
+        printf("[MM] Se cerro con exito \n");
+    }
+
+
+
+}
+
+
+void eliminar_sistema(void) {
+
+    Proceso *procesos_sistema = obtener_shm(0);
+
+    
+    pid_t pid;
+    int i;
+
+    /*   Elimino R    */
+
+    //Obtengo pid de R
+    sem_wait(sem);
+    pid = procesos_sistema[2].pid;
+    sem_post(sem);
+
+    cerrar_proceso(pid, 4);
+
+    /*   Elimino PM    */
+
+    //Obtengo pid de PM
+    sem_wait(sem);
+    pid = procesos_sistema[1].pid;
+    sem_post(sem);
+
+    cerrar_proceso(pid, 3);
+
+    /* Cierro semaforos, Shm y sockets */
+
+    //Semaforo
+    sem_close(sem);
+    sem_unlink(SEM_ADDR);
+
+    //SHM
+    int id = obtener_shm_id();
+    shmdt(procesos_sistema);
+    shmctl (id, IPC_RMID, 0);
+
+    //Sockets
+    for(i = 0; i < MAX_CLIENTS; i++){
+        if(monitored_fd_set[i] != -1){
+            close(monitored_fd_set[i]);
+        }
+    }
+
+    unlink(SOCKET_NAME); 
+    
+
+
+}
+
 
 int main(int argc, char const *argv[]){
 
@@ -417,7 +511,13 @@ int main(int argc, char const *argv[]){
     unlink(SOCKET_NAME);
 
     //Master socket fd para aceptar conexiones
-    connection_socket = sock_listen_un();
+    connection_socket = sock_listen_un(SOCKET_NAME);
+
+    if( connection_socket < 0 ){
+
+        MYERR(EXIT_FAILURE, "Error, no se pudo crear server. \n");
+
+    }
 
     iniciar_sistema(connection_socket);
 
@@ -430,19 +530,10 @@ int main(int argc, char const *argv[]){
     lista_proceso = obtener_shm(OFFSET);
 
 
-
-
-
-    if( connection_socket < 0 ){
-
-        MYERR(EXIT_FAILURE, "Error, no se pudo crear server. \n");
-
-    }
-
     add_to_monitored_fd_set(connection_socket);
 
 
-    while (TRUE){
+    while (!sistema_cerrado){
 
         refresh_fd_set(&readfds);
 
@@ -582,6 +673,8 @@ int main(int argc, char const *argv[]){
             }
         }
     }
+
+    eliminar_sistema();
 
 
     return 0;

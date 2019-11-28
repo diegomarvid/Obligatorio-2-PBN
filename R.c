@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 #include <signal.h>
 #include <error.h>
+#include <sys/socket.h>
 #include <errno.h>
 #include "DynList.c"
 #include "constantes.h"
@@ -13,6 +15,8 @@
 
 
 DynList *lista_Rp;
+volatile int sistema_cerrado = FALSE;
+int connection_socket;
 
 
 
@@ -45,29 +49,51 @@ void sigChildSet() {
     sigaction(SIGCHLD, &action, &oldaction);
 }
 
+//-------------Manjeo de la interrupcion de Terminacion--------------//
+void sigTermHandler(int signum, siginfo_t *info, void *ucontext ) {
+
+    sistema_cerrado = TRUE;
+    close(connection_socket);
+    connection_socket = -1;
+    printf("[R] Me llego el sig term papu\n");
+
+}
+
+//--------------------Set del manejador de Terminacion-----------------//
+void sigTermSet() {
+    struct sigaction action, oldaction;
+
+    action.sa_sigaction = sigTermHandler; //Funcion a llamar
+    sigemptyset(&action.sa_mask);
+    sigfillset(&action.sa_mask); //Bloqueo todas la seniales
+    action.sa_flags =  SA_SIGINFO;
+    action.sa_restorer = NULL;
+
+    sigaction(SIGTERM, &action, &oldaction);
+}
+
 
 //-------------------------CERRAR PROCESOS RP---------------------------//
 //Dado el pid de un proceso cierra de forma correcta al mismo.
-void cerrar_proceso(pid_t pid) {
+void cerrar_proceso(pid_t pid, int tiempo) {
 
     int status;
     int estado;
 
-    printf("Envio signal de terminate a %d \n", pid);
-    sleep(1);
-
+    printf("[R] Envio signal de terminate a %d \n", pid);
+    
     if(kill(pid, SIGTERM) == -1) {
         perror("Error en SIGTERM \n");
     };
 
-    sleep(10);
+    sleep(tiempo);
 
     estado = waitpid(pid, &status, WNOHANG);
 
     if(estado == 0) {
     
-        printf("Estas demorando mucho... \n");
-        printf("Envio signal de kill a %d \n", pid);
+        printf("[R] Estas demorando mucho... \n");
+        printf("[R]Envio signal de kill a %d \n", pid);
 
         if(kill(pid, SIGKILL) == -1) {
             perror("Error en SIGTERM \n");
@@ -77,7 +103,7 @@ void cerrar_proceso(pid_t pid) {
         //Si SIGTERM anduvo da este error, deberia manejarlo distinto
         perror("Error en waitpid WNOHANG \n");
     } else {
-        printf("Se cerro con exito \n");
+        printf("[R] Se cerro con exito \n");
     }
 
 
@@ -94,13 +120,11 @@ pid_t crear_Rp(int sockfd, int socket) {
     if(pid < 0) {
         printf("Error al hacer fork \n");
 
-
-
-
         close(sockfd);
 
     //Si estoy en el padre agrego el nuevo Rp a la lista.
     } else if(pid > 0){
+
         printf("Creacion de R' exitosa, PID: %d \n", pid);
         agregar_nodo(lista_Rp, pid, -1);
         close(sockfd);
@@ -123,35 +147,70 @@ pid_t crear_Rp(int sockfd, int socket) {
 
 }
 
+void cerrar_lista_Rp(void) {
+
+    printf("[R] Cerrando Rp...\n");
+
+    Nodo *actual = lista_Rp->head;
+    
+    while(actual != NULL){   
+        cerrar_proceso(actual->data, 2);
+        actual = actual->next;
+    }
+
+
+}
+
 
 //--------------CODIGO DE R----------------//
 int main(int argc, char const *argv[])
 {
 
     sigChildSet();
+    sigTermSet();
+
+    fd_set readfds;
 
     //Inicializo la lista de los Rp.
     lista_Rp = dynList_crear();
 
     //Creo un socket para conectar a las consolas con el sistema.
-    int socket = sock_listen_in(PORT); 
+    connection_socket = sock_listen_in(PORT); 
 
-    while(TRUE){
+    while(!sistema_cerrado){
 
-        
-        int sock_Rp = sock_open_in(socket);
+        //Refresh fdset
+        FD_ZERO(&readfds);
+        FD_SET(connection_socket, &readfds);
 
-        if (sock_Rp == ERROR_CONNECTION){
+        select(connection_socket + 1, &readfds, NULL, NULL, NULL);
 
-            MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion \n");
+        if(FD_ISSET(connection_socket, &readfds)) {
 
-        } else {
-            
-            pid_t rp_pid = crear_Rp(sock_Rp,socket);
+            //----------Acepto conexion y derivo a Rp--------------//
 
+            printf("Esperando conexion..\n");
+
+            int sock_Rp = sock_open_in(connection_socket);
+
+            if (sock_Rp == ERROR_CONNECTION){
+                MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion \n");
+            }
+            else{        
+                if (crear_Rp(sock_Rp, connection_socket) == FALLO){          
+                    MYERR(EXIT_FAILURE, "Error, R no pudo crear Rp \n");
+                }
+            }
         }
 
+        printf("No veo nueva conexion \n"); 
+        
+
     }
+
+    cerrar_lista_Rp();
+
+    close(connection_socket);
 
 
 

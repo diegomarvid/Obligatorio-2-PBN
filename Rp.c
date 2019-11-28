@@ -7,12 +7,19 @@
 #include <fcntl.h> // para el mkfifo
 #include <sys/stat.h> // para el mkfifo
 #include <sys/types.h>// para el mkfifo
+#include <signal.h>
 #include "sock.c"
 #include "constantes.h"
 #include "Rp.h"
 
 
 int monitored_fd_set[3] = {-1, -1, -1};
+int mm_socket;
+int consola_socket;
+int salida_fd = -1;
+
+
+volatile int sistema_cerrado = FALSE;
 
 //Recibe un mensaje como un string y lo transforma en una estructura interna Mensaje.
 void conv_to_struct(Mensaje *mensaje, char buffer[]){
@@ -60,50 +67,53 @@ get_max_fd(){
 
 
 
-// void tarea_consola(int consola_socket, int mm_socket ,char[] buffer, Mensaje mensaje){
+//-----------------------Manejo de Interrupciones--------------------//
 
-//                read = recv(consola_socket, buffer, BUFFSIZE, 0);
+//-------------Manjeo de la interrupcion de Terminacion---------------//
+void sigTermHandler(int signum, siginfo_t *info, void *ucontext ) {
 
-//             if (read < 0)
-//             {
+    char buffer[RESPUESTA_BUFFSIZE] = "Se cerro el sistema.\n";
 
-//                 close(consola_socket);
-//                 close(mm_socket);
+    int w = send(consola_socket, buffer, strlen(buffer) + 1, MSG_NOSIGNAL);
 
-//                 MYERR(EXIT_FAILURE, "[Rp] Error en el recv \n");
+    printf("Le mando a consola %s con %d bytes\n", buffer, w);
 
-//             }
-//             else if (read == 0)
-//             {
+    close(mm_socket);
+    close(consola_socket);
+    close(salida_fd);
 
-//                 close(consola_socket);
-//                 close(mm_socket);
+    exit(EXIT_SUCCESS);
 
-//                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada \n");
-//             }
+    
 
-//             printf("[Rp] Recibe de consola: %s \n", buffer);
+}
 
-//             //CONVIERTO A ESTRUCTURA INTERNA DEL SERVIDOR
+//--------------------Set del manejador de Terminacion-----------------//
+void sigTermSet() {
+    struct sigaction action, oldaction;
 
-//             conv_to_struct(&mensaje, buffer);
+    action.sa_sigaction = sigTermHandler; //Funcion a llamar
+    sigemptyset(&action.sa_mask);
+    sigfillset(&action.sa_mask); //Bloqueo todas la seniales
+    action.sa_flags =  SA_SIGINFO;
+    action.sa_restorer = NULL;
 
-//             //*********MANDA A MM***********//
+    sigaction(SIGTERM, &action, &oldaction);
+}
 
-//             if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0)
-//             {
 
-//                 close(mm_socket);
+//-------------------------Eliminar Rp-------------------------------//
+void eliminar_rp(int mm_socket, int consola_socket, int salida_fd) {
 
-//                 MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
+    
 
-//             }
-// }
-
+}
 
 
 int main(int argc, char const *argv[])
 {
+
+    sigTermSet();
 
     //Creo socket
     //int socket = sock_listen(PORT);
@@ -113,17 +123,20 @@ int main(int argc, char const *argv[])
 
     printf("[Rp] Se creo un socket entre en el puerto: %d \n", PORT);
 
+    //Fd que usa Rp
+    
 
     //Obtengo el valor del socket que conecta a Rp con su consola.
-    int consola_socket = atoi(argv[1]);
-    //Variable que guarda el socket que conecta a Rp con MM.
-    int mm_socket;
+    consola_socket = atoi(argv[1]);
+   
 
     //Inicializo la estructura mensaje con valores default.
     Mensaje mensaje = {getpid(), -1, "", RP};
 
+    
+
     //Conecto a Rp con MM.
-    mm_socket = sock_connect_un();
+    mm_socket = sock_connect_un(SOCKET_NAME);
 
     if( mm_socket == 0 ){
         MYERR(EXIT_FAILURE, "MM se desconecto \n");
@@ -139,7 +152,6 @@ int main(int argc, char const *argv[])
     //Maximo fd para el parametro del select
     //int max_fd = -1;
 
-    int salida_fd = -1;
     char salida_buffer[RESPUESTA_BUFFSIZE - 2];
     int pid;
 
@@ -152,7 +164,7 @@ int main(int argc, char const *argv[])
     //******Variables socket******//
     int r;
 
-    while(TRUE) {
+    while(!sistema_cerrado) {
 
         //Actualizo los fd a controlar por el select.
         refresh_fd_set(&readfds);
@@ -192,13 +204,13 @@ int main(int argc, char const *argv[])
             if(mensaje.op == LEER_SALIDA) {
 
                 //En mensaje.data esta el pid en formato string
-                char pipe_addr[100];          //Direccion para guardar el address de la pipe
-                strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
-                strcat(pipe_addr, mensaje.data); //Address = /tmp/pipe_2124
+                char listener_addr[100];          //Direccion para guardar el address de la pipe
+                strcpy(listener_addr, L_ADDR); //Address = /tmp/listener_
+                strcat(listener_addr, mensaje.data); //Address = /tmp/listener_2124
 
-                salida_fd = open(pipe_addr, O_RDONLY);
+                salida_fd = sock_connect_un(listener_addr);
 
-                printf("Fd de la pipe: %d\n", salida_fd);
+                printf("Fd de la socket: %d\n", salida_fd);
 
                 sscanf(mensaje.data, "%d", &pid);
 
@@ -223,6 +235,7 @@ int main(int argc, char const *argv[])
                     close(mm_socket);
                     MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
                 }
+
             }
         } else if(FD_ISSET(mm_socket, &readfds)) {
 
@@ -297,6 +310,11 @@ int main(int argc, char const *argv[])
         }
 
    }
+
+
+
+    eliminar_rp(mm_socket, consola_socket, salida_fd);
+
 
     return 0;
 }

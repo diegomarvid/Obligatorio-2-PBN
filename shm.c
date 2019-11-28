@@ -82,6 +82,17 @@ int crear_shm() {
 
 }
 
+int obtener_shm_id() {
+
+    key_t key = ftok(SHM_ADDR, PROJ_ID);
+
+    if(key == FALLO) {
+        return FALLO;
+    }
+
+    return shmget(key, SHM_SIZE, 0);
+
+}
 
 
 Proceso *obtener_shm(int offset) {

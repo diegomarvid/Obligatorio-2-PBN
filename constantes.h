@@ -9,7 +9,14 @@ enum { FALSE , TRUE };
 #define SHM_ADDR "/tmp/shm_pbn"
 #define PROJ_ID 'S'
 #define PIPE_ADDR "/tmp/pipe_"
+#define L_ADDR "/tmp/listener_"
 #define SEM_ADDR "sem_pbn"
+#define SOCKET_NAME "/tmp/PBN"
+
+
+#define MAX_CLIENTS 20
+#define PORT 3045
+#define SERVERHOST "127.0.0.1"
 
 //pid maximo tiene 9 digitos, es el size asociado a su str equivalente
 #define PID_SIZE 9
