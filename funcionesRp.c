@@ -12,14 +12,17 @@
 #include "constantes.h"
 #include "Rp.h"
 
+//------------------VARIABLES GLOBALES-----------------//
 
-int monitored_fd_set[3] = {-1, -1, -1};
+int monitored_fd_set[3] = {-1, -1, -1}; //Array para monitreo de fd
+//Sockets fd
 int mm_socket;
 int consola_socket;
 int salida_fd = -1;
 
+//---------------------FUNCIONES-----------------------//
 
-//Recibe un mensaje como un string y lo transforma en una estructura interna Mensaje.
+//------------Convertir buffer a Mensaje---------------//
 void conv_to_struct(Mensaje *mensaje, char buffer[]){
 
     int op;
@@ -37,6 +40,11 @@ void conv_to_struct(Mensaje *mensaje, char buffer[]){
 
 }
 
+//------------------------------------------------------//
+
+
+
+//--------Actualizar Array de Monitoreo de fd-----------//
 
 void refresh_fd_set(fd_set *fd_set_ptr) {
     FD_ZERO(fd_set_ptr);
@@ -44,6 +52,11 @@ void refresh_fd_set(fd_set *fd_set_ptr) {
     FD_SET(monitored_fd_set[1], fd_set_ptr);
     FD_SET(monitored_fd_set[2], fd_set_ptr);
 }
+//------------------------------------------------------//
+
+
+
+//------------Obtener maximo fd de Array----------------//
 
 int get_max_fd(){
 
@@ -62,11 +75,14 @@ int get_max_fd(){
     return max;
 }
 
+//------------------------------------------------------//
 
 
-//-----------------------Manejo de Interrupciones--------------------//
+
+//-----------------------Manejo de Interrupciones---------------------//
 
 //-------------Manjeo de la interrupcion de Terminacion---------------//
+
 void sigTermHandler(int signum, siginfo_t *info, void *ucontext) {
 
     char buffer[RESPUESTA_BUFFSIZE] = "Cerrando sistema...\n";
@@ -88,6 +104,8 @@ void sigTermHandler(int signum, siginfo_t *info, void *ucontext) {
 
 }
 
+//---------------------------------------------------------------------//
+
 //--------------------Set del manejador de Terminacion-----------------//
 void sigTermSet(void) {
     struct sigaction action, oldaction;
@@ -100,3 +118,5 @@ void sigTermSet(void) {
 
     sigaction(SIGTERM, &action, &oldaction);
 }
+
+//-----------------------------------------------------------------------//

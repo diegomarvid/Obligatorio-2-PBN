@@ -8,126 +8,101 @@ int main(int argc,char *argv[]){
 	//Configuro las interrupciones.
 	sigIntSet();
 
-	//Variables utilziadas para conectarse con esl servidor.
-	unsigned int ip[4], ipport;
-	char txt_ip[16];
-
 	//Variables auxiliares necesarias para el funcionamiento del menu.
 	int opcion = 1;
 	char mensaje[ENTRADA_BUFFSIZE];
 	char respuesta[RESPUESTA_BUFFSIZE];
-	//char cmd[CMD_SIZE];
 
 
-	//-----------Obtengo PORT e IP para conectarse----------//
+	//Conecto con el servidor en cuestion y almaceno su socket asociado.
+	int socket = sock_connect_in(SERVERHOST, PORT);
 
-	//do{
+	//Variable utilizada en la seccion de mensajes asincronicos del servidor.
+	int comunicacion;
 
-		// printf("Ingrese la direccion del servidor (ddd.ddd.ddd.ddd:pppp):\n");
+	//Variables select
 
-		// while (scanf("%u.%u.%u.%u:%u", ip, ip+1, ip+2, ip+3, &ipport) != 5 || ip[0] > 255 || ip[1] > 255 || ip[2] > 255 || ip[3] > 255 || ipport > MAX_PORT || ipport < 3000) {
+	//Guardo fd en el array para el select, los unicos son el socket con el servidor y STDIN.
+	monitored_fd_set[0] = STDIN_FILENO;
+	monitored_fd_set[1] = socket;
 
-		// 	//Limpio stdin y pido nuevamente.
-		// 	while ( getchar() != '\n' );
+	//Set para el select
+	fd_set readfds;
 
-		// 	MYERR(EXIT_SUCCESS, "Error al ingresar direccion ip y/o el puerto, ingreselo nuevamente:");
-		// }
+	//Variable para read en el socket
+	int r;
 
-		// sprintf(txt_ip, "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+	//Antes de comenzar se imprime el menu para asegurar su primera iteracion.
+	desplegar_menu();
 
+	//codigo d ela consola en su funcionamiento normal.
+	do
+	{
 
-		// int socket = sock_connect(txt_ip, ipport);
+		//Actualizo los fd a controlar por el select.
+		refresh_fd_set(&readfds);
+		//Realizo un select el cual nos permite saber si el usuario desea realizar una accion o no.
+		select(socket + 1, &readfds, NULL, NULL, NULL);
 
-
-
-
-		//Conecto con el servidor en cuestion y almaceno su socket asociado.
-		int socket = sock_connect_in(SERVERHOST, PORT);
-
-		//Variable utilizada en la seccion de mensajes asincronicos del servidor.
-		int comunicacion;
-
-		//******Variables select*******//
-		//Guardo fd en el array para el select, los unicos son el socket con el servidor y STDIN.
-		monitored_fd_set[0] = STDIN_FILENO;
-		monitored_fd_set[1] = socket;
-
-		fd_set readfds;
-
-		//Variable para read en el socket
-		int r;
-
-		//Antes de comenzar se imprime el menu para asegurar su primera iteracion.
-		desplegar_menu();
-
-		//codigo d ela consola en su funcionamiento normal.
-		do
+		//Si el usuario desea realizar una tarea.
+		if (FD_ISSET(STDIN_FILENO, &readfds))
 		{
 
-			//Actualizo los fd a controlar por el select.
-			refresh_fd_set(&readfds);
-			//Realizo un select el cual nos permite saber si el usuario desea realizar una accion o no.
-			select(socket + 1, &readfds, NULL, NULL, NULL);
+			//Obtengo la opcion que el desea.
+			opcion = readInt(1, 9);
 
-
-			//Si el usuario desea realizar una tarea.
-			if(FD_ISSET(STDIN_FILENO, &readfds)) {
-
-				//Obtengo la opcion que el desea.
-				opcion = readInt(1, 9);
-
-				//Mando a realizar tal tarea y espero su resultado.
-				if (opcion != 7) {
-					crear_mensaje(opcion, mensaje);
-					transimitir_mensaje(socket, mensaje, respuesta);
-				}
+			//Mando a realizar tal tarea y espero su resultado.
+			if (opcion != 7)
+			{
+				crear_mensaje(opcion, mensaje);
+				transimitir_mensaje(socket, mensaje, respuesta);
+			}
 
 			//Luego de realizar una tarea y obtener su resultado, nuevamente despliego el menu.
 			desplegar_menu();
 
 			//Si el servidor envia mensaje de procesos fallidos la consola los capta mientras que no se este realizando ninguna operacion.
-			}else if(FD_ISSET(socket, &readfds)) {
+		}
+		else if (FD_ISSET(socket, &readfds))
+		{
 
-				memset(respuesta, 0, RESPUESTA_BUFFSIZE);
+			memset(respuesta, 0, RESPUESTA_BUFFSIZE);
 
-				//Lee del servidor y formatea su mensaje.
-				r = recv(socket, respuesta, RESPUESTA_BUFFSIZE, 0);
+			//Lee del servidor y formatea su mensaje.
+			r = recv(socket, respuesta, RESPUESTA_BUFFSIZE, 0);
 
-				//printf("Cantidad de bytes recibidos: %d\n", r);
+			//printf("Cantidad de bytes recibidos: %d\n", r);
 
-				if(r == ERROR_CONNECTION) {
-					shutdown(socket, SHUT_RDWR);
-					close(socket);
-					MYERR(EXIT_FAILURE, "Se cayo el servidor.");
-				} else if(r == END_OF_CONNECTION) {
-					shutdown(socket, SHUT_RDWR);
-					close(socket);
-					MYERR(EXIT_FAILURE, "Se termino la conexion con el servidor");
-				}
-
-				//printf("%s",respuesta);
-		
-				sscanf(respuesta,"%d-%[^'\v']s",&comunicacion,respuesta);
-				
-				//Evaluar largo por que al principio y fin de conexion la pipe manda null.
-				if(strlen(respuesta) > 0) {
-					printf("%s", respuesta);
-				}
-				
-
+			if (r == ERROR_CONNECTION)
+			{
+				shutdown(socket, SHUT_RDWR);
+				close(socket);
+				MYERR(EXIT_FAILURE, "Se cayo el servidor.");
+			}
+			else if (r == END_OF_CONNECTION)
+			{
+				shutdown(socket, SHUT_RDWR);
+				close(socket);
+				MYERR(EXIT_FAILURE, "Se termino la conexion con el servidor");
 			}
 
-			//desplegar_menu();
+			//printf("%s",respuesta);
 
-	    } while ( opcion != 7);
+			sscanf(respuesta, "%d-%[^'\v']s", &comunicacion, respuesta);
 
-		//Cierre de consola, se envio el mensaje de cierre, solo hace falta cerrar su socket.
-		close(socket);
+			//Evaluar largo por que al principio y fin de conexion la pipe manda null.
+			if (strlen(respuesta) > 0)
+			{
+				printf("%s", respuesta);
+			}
+		}
 
-		printf("Hasta luego!\n");
+	} while (opcion != 7);
 
+	//Cierre de consola, se envio el mensaje de cierre, solo hace falta cerrar su socket.
+	close(socket);
 
+	printf("Hasta luego!\n");
 
 	return 0;
-
-	}
+}

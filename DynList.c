@@ -5,7 +5,11 @@
 
 
 
+//-----------------Crear lista dinamica------------------//
+
 DynList *dynList_crear(void) {
+
+    //Crea la lista vacia
 
     DynList *dynlist;
 
@@ -20,8 +24,10 @@ DynList *dynList_crear(void) {
     }
 
 }
+//------------------------------------------------------//
 
 
+//-----------------Agregar nodo lista-------------------//
 Nodo *agregar_nodo(DynList *dynlist, int data, int fd){
 
     if(dynlist->size == 0) {
@@ -86,16 +92,11 @@ Nodo *agregar_nodo(DynList *dynlist, int data, int fd){
     }
 
 }
+//------------------------------------------------------//
 
 
-// void map_dynlist(void (*f)(Nodo *nodo)){
-//     Nodo *current = dynlist->head;
-// 	while (current != NULL) {
-// 		f(current);
-// 		current = current->next;
-// 	}
-// }
 
+//-----------------Imprimir lista-----------------------//
 void print_dynlist(DynList *dynlist)
 {
 	printf("\n");
@@ -113,6 +114,10 @@ void print_dynlist(DynList *dynlist)
     printf("\n");
 }
 
+//------------------------------------------------------//
+
+
+//----------------Buscar nodo segun fd------------------//
 Nodo *buscar_nodo_fd(DynList *dynlist, int fd) {
 
     Nodo *actual = dynlist->head;
@@ -124,6 +129,10 @@ Nodo *buscar_nodo_fd(DynList *dynlist, int fd) {
 
     return actual;
 }
+//------------------------------------------------------//
+
+
+//----------------Buscar nodo segun data----------------//
 
 Nodo *buscar_nodo_data(DynList *dynlist, int data) {
 
@@ -137,6 +146,11 @@ Nodo *buscar_nodo_data(DynList *dynlist, int data) {
     return actual;
 }
 
+//------------------------------------------------------//
+
+
+//--------------Eliminar nodo segun data----------------//
+
 int eliminar_nodo(DynList *dynlist, int dato){
 
     Nodo *head = dynlist->head;
@@ -144,17 +158,13 @@ int eliminar_nodo(DynList *dynlist, int dato){
     Nodo *actual = head;
 
     Nodo *aux;
-//return
 
     while ( actual != NULL && actual->data != dato  )
     {
-
         aux = actual;
 
         actual = actual->next;
-
     }
-
 
 
     if(actual == NULL){
@@ -169,8 +179,6 @@ int eliminar_nodo(DynList *dynlist, int dato){
         dynlist->size--;
 
         free(actual);
-
-
 
         return EXITO;
 
@@ -199,9 +207,12 @@ int eliminar_nodo(DynList *dynlist, int dato){
 
     }
 
-
 }
 
+//------------------------------------------------------//
+
+
+//---------------Eliminar nodo segun fd-----------------//
 int eliminar_nodo_fd(DynList *dynlist, int fd){
 
     Nodo *head = dynlist->head;
@@ -267,43 +278,3 @@ int eliminar_nodo_fd(DynList *dynlist, int fd){
 
 }
 
-
-// int main(int argc, char const *argv[])
-// {
-
-//     DynList *din = dynList_crear();
-//     int dato;
-
-//     while (1)
-//     {
-
-//         printf ("ingrese un numero prro: \n");
-//         scanf("%d", &dato);
-//         agregar_nodo(din,dato);
-//         print_dynlist(din);
-
-//         printf ("ingrese un numero prro: \n");
-//         scanf("%d", &dato);
-//         agregar_nodo(din,dato);
-//         print_dynlist(din);
-
-//         printf ("ingrese un numero prro a eliminar prro: \n");
-//         scanf("%d", &dato);
-//         eliminar_nodo(din,dato);
-//         print_dynlist(din);
-
-//         printf ("ingrese un numero prro a eliminar prro: \n");
-//         scanf("%d", &dato);
-//         eliminar_nodo(din,dato);
-//         print_dynlist(din);
-
-
-//         printf ("ingrese un numero prro: \n");
-//         scanf("%d", &dato);
-//         agregar_nodo(din,dato);
-//         print_dynlist(din);
-//     }
-
-
-//     return 0;
-// }

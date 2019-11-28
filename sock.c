@@ -26,8 +26,6 @@ int sock_listen_un (char *socketaddr){
 
     }
 
-    //printf("Master socket filed descriptor created \n");
-
     memset(&name, 0, sizeof(struct sockaddr_un));
 
     name.sun_family = AF_UNIX;
@@ -43,15 +41,12 @@ int sock_listen_un (char *socketaddr){
 
     }
 
-    //printf("bind() successfull \n");
-
     if(listen(connection_socket, MAX_CLIENTS) < 0) {
 
         perror("listen");
 
         exit(EXIT_FAILURE);
     }
-
 
     return connection_socket;
 
@@ -68,10 +63,8 @@ int sock_listen_in(uint16_t port){
     sock = socket(PF_INET, SOCK_STREAM, 0);
 
     if(sock < 0) {
-
         perror("socket");
         exit(EXIT_FAILURE);
-
     }
 
     /* Give the socket a name */
@@ -90,8 +83,6 @@ int sock_listen_in(uint16_t port){
         exit(EXIT_FAILURE);
     }
 
-    //printf("bind() successfull \n");
-
     if(listen(sock, MAX_CLIENTS) < 0) {
         perror("listen");
         exit(EXIT_FAILURE);
@@ -106,17 +97,12 @@ int sock_open_un(int connection_socket) {
 
 int rdsocket;
 
+    //Mientras de error por interrumpcion segui aceptando
+
     do{
-
-        //printf("\n");
-
-        //printf("Waiting on accept() \n");
-
-        //printf("\n");
 
         rdsocket = accept(connection_socket, NULL, NULL);
         
-
     }while(errno == EINTR && rdsocket < 0);
 
 
@@ -124,9 +110,6 @@ int rdsocket;
         perror("No pude conectar el servidor");
     }
 
-    //printf("Connection accepted from client\n");
-
-    //printf("\n");
 
     return rdsocket;
 
@@ -140,27 +123,18 @@ int sock_open_in(int sock) {
 
     int rdsocket;
 
+    //Mientras de error por interrumpcion segui aceptando
+
     do{
-
-        //printf("\n");
-
-        //printf("Waiting on accept() \n");
-
-        //printf("\n");
 
         rdsocket = accept(sock, &addr, &length);
         
-
     }while(errno == EINTR && rdsocket < 0);
 
 
     if(rdsocket < 0) {
         perror("No pude conectar el servidor");
     }
-
-    //printf("Connection accepted from client\n");
-
-    //printf("\n");
 
     return rdsocket;
 }
@@ -176,10 +150,7 @@ int sock_connect_un(char *sockadrr) {
         sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
         if(sock < 0) {
-
-            perror("socket");
-            exit(EXIT_FAILURE);
-
+            return FALLO;
         }
 
         memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -191,14 +162,8 @@ int sock_connect_un(char *sockadrr) {
 
            /* Do connect */
         if(connect(sock, (const struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1) {
-
-            perror("connect (client)");
             return FALLO;
-            //exit(EXIT_FAILURE);
-
         }
-
-    //printf("Connected to the server \n");
 
     return sock;
 
@@ -240,9 +205,5 @@ int sock_connect_in(char *address, uint16_t port) {
             exit(EXIT_FAILURE);
         }
 
-    //printf("Connected to the server \n");
-
     return sock;
-
-
 }

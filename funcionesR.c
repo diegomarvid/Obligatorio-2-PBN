@@ -21,6 +21,9 @@ int connection_socket;
 
 
 //----------------------INTERRUPCIONES-------------------------//
+
+
+
 //-------------Manjeo de la interrupcion de la muerte del hijo--------------//
 void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
 
@@ -35,6 +38,9 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
     printf("[R] Se elimino Rp (%d)\n", pid);
 
 }
+//-------------------------------------------------------------------------//
+
+
 
 //--------------------Set del manejador de muerte del hijo-----------------//
 void sigChildSet() {
@@ -48,6 +54,9 @@ void sigChildSet() {
 
     sigaction(SIGCHLD, &action, &oldaction);
 }
+//--------------------------------------------------------------//
+
+
 
 //-------------Manjeo de la interrupcion de Terminacion--------------//
 void sigTermHandler(int signum, siginfo_t *info, void *ucontext ) {
@@ -61,6 +70,9 @@ void sigTermHandler(int signum, siginfo_t *info, void *ucontext ) {
     printf("[R] Me estoy auto-eliminando...\n");
 
 }
+//--------------------------------------------------------------//
+
+
 
 //--------------------Set del manejador de Terminacion-----------------//
 void sigTermSet() {
@@ -74,6 +86,9 @@ void sigTermSet() {
 
     sigaction(SIGTERM, &action, &oldaction);
 }
+//--------------------------------------------------------------//
+
+
 
 //-------------------------CERRAR PROCESOS RP---------------------------//
 //Dado el pid de un proceso cierra de forma correcta al mismo.
@@ -92,6 +107,8 @@ void cerrar_proceso(pid_t pid, int tiempo) {
 
     estado = waitpid(pid, &status, WNOHANG);
 
+    //Si el estado es 0 es porque el hijo no cambio de estado 
+    //en el tiempo previsto
     if(estado == 0) {
     
         printf("[R] Estas demorando mucho... \n");
@@ -101,16 +118,16 @@ void cerrar_proceso(pid_t pid, int tiempo) {
             perror("Error en SIGTERM \n");
         }
         
-    } else if(estado == -1) {
-        //Si SIGTERM anduvo da este error, deberia manejarlo distinto
-        printf("[R] Ya se elimino Rp (%d)\n", pid);
+    //Si no es cero o es el pid o es error significando que el hijo ya no existe
+    //de cualquier manera el proceso queda eliminado.    
     } else {
         printf("[R] Ya se elimino el proceso (%d) \n", pid);
     }
 
-    
-
 }
+//--------------------------------------------------------------//
+
+
 
 //-------------------------CREAR RP----------------------------//
 pid_t crear_Rp(int sockfd, int socket) {
@@ -147,6 +164,11 @@ pid_t crear_Rp(int sockfd, int socket) {
     return pid;
 
 }
+//-------------------------------------------------------------//
+
+
+
+//-------------------------CREAR RP----------------------------//
 
 void cerrar_lista_Rp(void) {
 
@@ -167,3 +189,5 @@ void cerrar_lista_Rp(void) {
     free(lista_Rp);
 
 }
+
+//--------------------------------------------------------------//

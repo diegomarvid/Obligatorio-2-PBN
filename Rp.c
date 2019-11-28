@@ -141,7 +141,7 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con MM \n");
             }
 
-            strcpy(respuesta, "");
+            memset(respuesta, 0, RESPUESTA_BUFFSIZE);
 
             //Si el mensaje que llega de MM lo creo el entonces el id es MM
             //y el mensaje es sicrono.
@@ -166,7 +166,7 @@ int main(int argc, char const *argv[])
         } else if( FD_ISSET(salida_fd, &readfds) ){
 
                 //Limpio el buffer
-                memset(salida_buffer, 0, OUT_BUFFSIZE); 
+                memset(salida_buffer, 0, RESPUESTA_BUFFSIZE - 2); 
 
                 //Leo lo que llega
                 r = read(salida_fd, salida_buffer, RESPUESTA_BUFFSIZE - 2);
@@ -184,6 +184,10 @@ int main(int argc, char const *argv[])
                     //y lo envio a consola
                     sprintf(respuesta, "%d-%s", ASINCRONICO, salida_buffer);
                     w = send(consola_socket, respuesta , r + 2 , MSG_NOSIGNAL);
+
+                    if(w < 0) {
+                        printf("Error al enviar salida de procesoa consola\n");
+                    }
 
                 }
 
