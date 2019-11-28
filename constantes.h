@@ -27,7 +27,7 @@ enum { FALSE , TRUE };
 #define ENTRADA_BUFFSIZE PID_SIZE + 1 + CMD_SIZE
 
 //Buffer para leer y enviar salida estandar de un proceso
-#define OUT_BUFFSIZE 200
+#define OUT_BUFFSIZE 500
 
 
 #define MYERR(status, txt) error_at_line(status, errno, __FILE__, __LINE__ - 1, txt)

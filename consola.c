@@ -309,8 +309,12 @@ int main(int argc,char *argv[]){
 			//Si el servidor envia mensaje de procesos fallidos la consola los capta mientras que no se este realizando ninguna operacion.
 			}else if(FD_ISSET(socket, &readfds)) {
 
+				memset(respuesta, 0, RESPUESTA_BUFFSIZE);
+
 				//Lee del servidor y formatea su mensaje.
 				r = recv(socket, respuesta, RESPUESTA_BUFFSIZE, 0);
+
+				//printf("Cantidad de bytes recibidos: %d\n", r);
 
 				if(r == ERROR_CONNECTION) {
 					MYERR(EXIT_FAILURE, "Se cayo el servidor.");

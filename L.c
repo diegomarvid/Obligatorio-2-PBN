@@ -17,7 +17,7 @@ int main(int argc, char const *argv[])
     
     char pipe_addr[100];
 
-    char buffer[ENTRADA_BUFFSIZE];
+    char buffer[OUT_BUFFSIZE];
 
     strcpy(pipe_addr, argv[1]);
 
@@ -27,11 +27,13 @@ int main(int argc, char const *argv[])
         MYERR(EXIT_FAILURE, "L no pudo acceder a la pipe");
     }
 
+    int r = 4;
 
-    while (TRUE)
-    {
+    do {
+        //r = read(pipe_fd, buffer, OUT_BUFFSIZE);
         sleep(1);
-    }
+    }  while (r != 0);
+
     
     return 0;
 }

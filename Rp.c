@@ -140,7 +140,7 @@ int main(int argc, char const *argv[])
     //int max_fd = -1;
 
     int salida_fd = -1;
-    char salida_buffer[OUT_BUFFSIZE];
+    char salida_buffer[RESPUESTA_BUFFSIZE - 2];
     int pid;
 
     //Guardo fd en el array para el select
@@ -266,9 +266,15 @@ int main(int argc, char const *argv[])
 
         } else if( FD_ISSET(salida_fd, &readfds) ){
 
-                do{
+                //do{
 
-                r = read(salida_fd, salida_buffer, OUT_BUFFSIZE);
+
+                int w;    
+
+                //strcpy(salida_buffer, "");   
+                memset(salida_buffer, 0, OUT_BUFFSIZE); 
+
+                r = read(salida_fd, salida_buffer, RESPUESTA_BUFFSIZE - 2);
 
                 if(r == ERROR_CONNECTION) {
                     perror("Error en la conexion con el listener");
@@ -279,10 +285,12 @@ int main(int argc, char const *argv[])
                 } else{
                     sprintf(respuesta, "%d-%s", ASINCRONICO, salida_buffer);
                     printf("Respuesta mandada: %s\n", respuesta);
-                    send(consola_socket, respuesta , sizeof(respuesta) + 1, MSG_NOSIGNAL);
+                    w = send(consola_socket, respuesta , r + 2 , MSG_NOSIGNAL);
+
+                    printf("Cantidad bytes recibidos: %d \nCantidad de bytes enviados: %d\n", r, w);
                 }
 
-                } while( r != END_OF_CONNECTION);
+                //} //while( r != END_OF_CONNECTION);
 
                 
 

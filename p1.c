@@ -9,7 +9,7 @@ int main(int argc, char const *argv[])
 
     sleep(10);
 
-    for(i = 0; i < 6; i++) {
+    for(i = 0; i < 2000; i++) {
         printf("[%d] %d ~ \n", getpid(), i);
         //sleep(1);
     }

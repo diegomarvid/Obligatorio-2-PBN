@@ -18,6 +18,7 @@
 
 
 volatile Proceso *lista_proceso;
+volatile int sistema_cerrado = FALSE;
 sem_t *sem;
 
 
@@ -170,7 +171,7 @@ void ejecutar_procesos(int mm_socket) {
     pid_t L_pid;
     Mensaje mensaje = {-1, -1, "", PM};
 
-    while(TRUE) {
+    while(!sistema_cerrado) {
 
         for(i = 0; i < PROCESS_MAX; i++) {
 
@@ -223,7 +224,11 @@ void ejecutar_procesos(int mm_socket) {
 
             if(p.estado == ELIMINAR) {
                 kill(p.pid, SIGKILL);
-                kill(p.LID, SIGKILL);
+
+                if(kill(p.LID, SIGKILL)==-1){
+                        perror("Error en eliminar L\n");
+                }
+
                 sem_wait(sem);
                 lista_proceso[i].estado = TERMINADO;
                 sem_post(sem);               
@@ -245,7 +250,9 @@ void ejecutar_procesos(int mm_socket) {
                     MYERR(EXIT_FAILURE, "Error en el send");
                 }
 
-                kill(p.LID, SIGKILL);
+                if(kill(p.LID, SIGKILL)==-1){
+                        perror("Error en eliminar L\n");
+                }
 
                 sem_wait(sem);
                 lista_proceso[i].estado = TERMINADO;
@@ -256,6 +263,10 @@ void ejecutar_procesos(int mm_socket) {
     }
 }
 
+
+void eliminar_procesos(void) {
+    
+}
 
 //*******Funciones de signals********//
 
@@ -279,18 +290,34 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
         unlink(pipe_addr);
     }
 
+    int semval;
+    int interrumpi_sem = FALSE;
+    sem_getvalue(sem,&semval);
+
+
+    printf("El semaforo tiene un valor:%d\n",semval);
+
     printf("[Signal] status: %d \n", status);
+
+    if(semval == 0){
+        sem_post(sem);
+        interrumpi_sem = TRUE;
+    }
 
     if(status == EXIT_SUCCESS) {
       cambiar_estado_proceso(pid, ELIMINAR);
+      
       printf("[%d] Proceso terminado \n", pid);
     } else {
       cambiar_estado_proceso(pid, INVALIDO);
       printf("[%d] Proceso invalido \n", pid);
     }
 
+    sem_getvalue(sem,&semval);
 
-
+    if(semval == 1 && interrumpi_sem) {
+        sem_wait(sem);
+    }
 
 }
 
@@ -305,6 +332,26 @@ void sigChildSet() {
 
     sigaction(SIGCHLD, &action, &oldaction);
 }
+
+void sigTermHandler(int signum, siginfo_t *info, void *ucontext) {
+
+    sistema_cerrado = TRUE;
+
+}
+
+
+void sigTermSet() {
+    struct sigaction action, oldaction;
+
+    action.sa_sigaction = sigTermHandler; //Funcion a llamar
+    sigemptyset(&action.sa_mask);
+    sigfillset(&action.sa_mask); //Bloqueo todas la seniales
+    action.sa_flags = SA_SIGINFO;
+    action.sa_restorer = NULL;
+
+    sigaction(SIGTERM, &action, &oldaction);
+}
+
 
 
 
@@ -334,6 +381,8 @@ int main(int argc, char const *argv[])
     lista_proceso = obtener_shm(OFFSET);
 
     ejecutar_procesos(mm_socket);
+
+    eliminar_procesos();
 
 
     return 0;
