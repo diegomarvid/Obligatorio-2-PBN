@@ -6,4 +6,4 @@ gcc -Wall -pthread PM.c -o PM
 gcc -Wall R.c -o R
 gcc -Wall Rp.c -o Rp
 gcc -Wall consola.c -o consola
-./MM
+
