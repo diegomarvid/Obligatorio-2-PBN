@@ -578,7 +578,7 @@ void eliminar_sistema(void) {
     pid = procesos_sistema[1].pid;
     sem_post(sem);
 
-    cerrar_proceso(pid, 6);
+    cerrar_proceso(pid, 10);
 
     //---------------Eliminar Semaforo, sockets y shm--------------//
 

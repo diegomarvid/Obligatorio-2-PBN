@@ -57,7 +57,7 @@ int crear_shm() {
 
     int id = shmget(key, SHM_SIZE, 0666 | IPC_CREAT);
 
-    printf("\n\nProcesos totales: %d\n\n", TOTAL_PROCESS);
+    printf("\n\nProcesos maximos: %d\n\n", TOTAL_PROCESS);
     
     if(id == FALLO) {
         return FALLO;
