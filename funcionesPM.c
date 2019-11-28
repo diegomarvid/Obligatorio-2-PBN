@@ -19,6 +19,92 @@ volatile Proceso *lista_proceso;
 volatile int sistema_cerrado = FALSE;
 sem_t *sem;
 
+void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
+
+    if(sistema_cerrado == TRUE) {
+        return;
+    }
+
+    int status;
+    pid_t pid;
+
+    
+
+    pid = waitpid(-1, &status, 0);
+
+    if(pid == FALLO) {
+      printf("Fallo el waitpid \n");
+    } else {
+
+        char pipe_addr[100];          //Direccion para guardar el address de la pipe
+        strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
+        char pid_str[20];
+        sprintf(pid_str, "%d", pid); // Paso el pid a str para concatenarlo
+        strcat(pipe_addr, pid_str);  //Address = /tmp/pipe_2180
+
+        unlink(pipe_addr);
+    }
+
+    int semval;
+    int interrumpi_sem = FALSE;
+    sem_getvalue(sem,&semval);
+
+
+    if(semval == 0){
+        sem_post(sem);
+        interrumpi_sem = TRUE;
+    }
+
+    if(status == EXIT_SUCCESS) {
+      cambiar_estado_proceso(pid, ELIMINAR);
+    } else {
+      cambiar_estado_proceso(pid, INVALIDO);  
+    }
+
+    printf("[PM] - [%d] Proceso terminado\n", pid);
+
+    sem_getvalue(sem,&semval);
+
+    if(semval == 1 && interrumpi_sem) {
+        sem_wait(sem);
+    }
+
+   
+
+}
+
+void sigChildSet(void) {
+    struct sigaction action, oldaction;
+
+    action.sa_sigaction = sigChildHandler; //Funcion a llamar
+    sigemptyset(&action.sa_mask);
+    sigfillset(&action.sa_mask); //Bloqueo todas la seniales
+    action.sa_flags = SA_NOCLDSTOP | SA_SIGINFO;
+    action.sa_restorer = NULL;
+
+    sigaction(SIGCHLD, &action, &oldaction);
+}
+
+void sigTermHandler(int signum, siginfo_t *info, void *ucontext) {
+
+    sistema_cerrado = TRUE;
+    printf("[PM] Me estoy autoeliminando...\n");
+
+}
+
+
+void sigTermSet(void) {
+    struct sigaction action, oldaction;
+
+    action.sa_sigaction = sigTermHandler; //Funcion a llamar
+    sigemptyset(&action.sa_mask);
+    sigfillset(&action.sa_mask); //Bloqueo todas la seniales
+    action.sa_flags = SA_SIGINFO;
+    action.sa_restorer = NULL;
+
+    sigaction(SIGTERM, &action, &oldaction);
+}
+
 
 /*  Funcion para separar un string en un array de string por un delimitador  */
 
@@ -111,9 +197,6 @@ pid_t crear_proceso(char cmd[], int *L_pid) {
 
     if(pid > 0) {
 
-        printf("\n\n[%d] Proceso creado \n\n", pid);
-
-        
         sprintf(pid_str, "%d", pid); // Paso el pid a str para concatenarlo
         strcat(pipe_addr, pid_str);  //Address = /tmp/pipe_2180
 
@@ -128,6 +211,8 @@ pid_t crear_proceso(char cmd[], int *L_pid) {
             return FALLO;
         }
 
+        printf("[PM] - [%d] Proceso creado \n", pid);
+
         return pid;
 
         
@@ -136,13 +221,8 @@ pid_t crear_proceso(char cmd[], int *L_pid) {
         sprintf(pid_str, "%d", getpid()); // Paso el pid a str para concatenarlo
         strcat(pipe_addr, pid_str); //Address = /tmp/pipe_2180
 
-        
-        printf("Me tranque \n");
-
         //Se abre como RDWR para que no tranque cuando no hay lectores
         int pipe_fd = open(pipe_addr, O_WRONLY);
-
-        printf("Me destranque \n");
 
         if(pipe_fd == FALLO) {
             MYERR(EXIT_FAILURE, "Error al abrir pipe para escritura");
@@ -220,12 +300,9 @@ void ejecutar_procesos(int mm_socket) {
             }
 
             if(p.estado == ELIMINAR) {
+                kill(p.LID, SIGKILL);              
                 kill(p.pid, SIGKILL);
-
-                // if(kill(p.LID, SIGTERM)==-1){
-                //         perror("Error en eliminar L\n");
-                // }
-
+                
                 sem_wait(sem);
                 lista_proceso[i].estado = TERMINADO;
                 sem_post(sem);               
@@ -241,15 +318,14 @@ void ejecutar_procesos(int mm_socket) {
                 mensaje.op = CREACION;
                 mensaje.RID = p.RID;
 
+                kill(p.LID, SIGKILL);
+                kill(p.pid, SIGKILL);
+
                 sprintf(mensaje.data, "%d-%d", p.pid, FALLO);
 
                 if(send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0) {
                     MYERR(EXIT_FAILURE, "Error en el send");
                 }
-
-                // if(kill(p.LID, SIGTERM)==-1){
-                //         perror("Error en eliminar L\n");
-                // }
 
                 sem_wait(sem);
                 lista_proceso[i].estado = TERMINADO;
@@ -276,8 +352,6 @@ void cerrar_proceso(pid_t pid, int tiempo) {
     sleep(tiempo);
 
     estado = waitpid(pid, &status, WNOHANG);
-
-    printf("[PM] Estado de waitpid WNOHANG: %d \n", estado);
 
     if(estado == 0) {
         printf("[PM] Estas demorando mucho... \n");

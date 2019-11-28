@@ -51,9 +51,6 @@ int main(int argc, char const *argv[]){
 
         refresh_fd_set(&readfds);
 
-        printf("Waiting on select sys call \n");
-
-
         select(get_max_fd() + 1, &readfds, NULL, NULL, NULL);
 
         if(FD_ISSET(connection_socket, &readfds)){
@@ -67,7 +64,6 @@ int main(int argc, char const *argv[]){
 
             add_to_monitored_fd_set(data_socket);
             agregar_nodo(lista_fd, -1, data_socket);
-            print_dynlist(lista_fd);
 
 
         }else{
@@ -107,14 +103,8 @@ int main(int argc, char const *argv[]){
 
                             //Agrego RID a la lista dinamica
                             if (nodo_fd != NULL){
-                                nodo_fd->data = mensaje.RID;
-                                print_dynlist(lista_fd);
+                                nodo_fd->data = mensaje.RID;                               
                             }
-
-                            printf("[MM] recibe de Rp: \n");
-                            printf("Op: %d \n", mensaje.op);
-                            printf("Data: %s \n", mensaje.data);
-                            printf("id: %d \n", mensaje.id);
 
                             //Realiza la operacion y genera el mensaje pertinente.
                             ejecutar_operacion(&mensaje, socket_actual);
@@ -128,11 +118,6 @@ int main(int argc, char const *argv[]){
                                     perror("Error en el send");
                                 }
                             }
-
-                            printf("[MM] envia a Rp: \n");
-                            printf("Op: %d \n", mensaje.op);
-                            printf("Data: %s \n", mensaje.data);
-                            printf("id: %d \n", mensaje.id);
 
                         } else if(mensaje.id == PM) {
 

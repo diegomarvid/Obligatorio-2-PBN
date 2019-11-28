@@ -1,6 +1,13 @@
 #ifndef PM_H
 #define PM_H
 
+void sigChildHandler(int signum, siginfo_t *info, void *ucontext);
+
+void sigChildSet(void);
+
+void sigTermHandler(int signum, siginfo_t *info, void *ucontext);
+
+void sigTermSet(void);
 
 void str_split(char *build_string[], char string[], char *delim);
 

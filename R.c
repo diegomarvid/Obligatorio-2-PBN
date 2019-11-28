@@ -17,6 +17,8 @@ int main(int argc, char const *argv[])
     //Creo un socket para conectar a las consolas con el sistema.
     connection_socket = sock_listen_in(PORT); 
 
+    printf("[R] Escuchando en IP: %s:%d \n", SERVERHOST, PORT);
+
     while(!sistema_cerrado){
 
         //Refresh fdset
@@ -29,17 +31,18 @@ int main(int argc, char const *argv[])
 
             //----------Acepto conexion y derivo a Rp--------------//
 
-            //printf("Esperando conexion..\n");
+            
 
             int sock_Rp = sock_open_in(connection_socket);
 
             if (sock_Rp == ERROR_CONNECTION){
                 MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion \n");
             }
-            else{        
-                if (crear_Rp(sock_Rp, connection_socket) == FALLO){          
+            else{                 
+                if (crear_Rp(sock_Rp, connection_socket) == FALLO){         
                     MYERR(EXIT_FAILURE, "Error, R no pudo crear Rp \n");
                 }
+               
             }
         }
 
@@ -51,7 +54,7 @@ int main(int argc, char const *argv[])
     cerrar_lista_Rp();
 
     close(connection_socket);
-
+    //printf("[R] Cerre conection socket\n")
 
     return 0;
 }

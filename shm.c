@@ -59,13 +59,12 @@ int crear_shm() {
 
     int id = shmget(key, SHM_SIZE, 0666 | IPC_CREAT);
 
-    printf("Procesos totales: %d\nTamano proceso: %ld\nTamano de SHM: %ld\n", TOTAL_PROCESS, sizeof(Proceso), SHM_SIZE);
+    printf("\n\nProcesos totales: %d\n\n", TOTAL_PROCESS);
     
     if(id == FALLO) {
         return FALLO;
     }
 
-    printf("Shm id: %d \n", id);
 
     //Inicializar shm
     void *ptr = shmat(id, NULL, 0);

@@ -389,6 +389,8 @@ void iniciar_sistema(int connection_socket) {
 
     }
 
+    sleep(2);
+
     //Guardo PM en la memoria compartida
     procesos_sistema[1].pid = pm_pid;
     procesos_sistema[1].RID = INVALIDO;

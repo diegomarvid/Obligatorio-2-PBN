@@ -26,7 +26,7 @@ int sock_listen_un (char *socketaddr){
 
     }
 
-    printf("Master socket filed descriptor created \n");
+    //printf("Master socket filed descriptor created \n");
 
     memset(&name, 0, sizeof(struct sockaddr_un));
 
@@ -43,7 +43,7 @@ int sock_listen_un (char *socketaddr){
 
     }
 
-    printf("bind() successfull \n");
+    //printf("bind() successfull \n");
 
     if(listen(connection_socket, MAX_CLIENTS) < 0) {
 
@@ -90,7 +90,7 @@ int sock_listen_in(uint16_t port){
         exit(EXIT_FAILURE);
     }
 
-    printf("bind() successfull \n");
+    //printf("bind() successfull \n");
 
     if(listen(sock, MAX_CLIENTS) < 0) {
         perror("listen");
@@ -108,11 +108,11 @@ int rdsocket;
 
     do{
 
-        printf("\n");
+        //printf("\n");
 
-        printf("Waiting on accept() \n");
+        //printf("Waiting on accept() \n");
 
-        printf("\n");
+        //printf("\n");
 
         rdsocket = accept(connection_socket, NULL, NULL);
         
@@ -124,9 +124,9 @@ int rdsocket;
         perror("No pude conectar el servidor");
     }
 
-    printf("Connection accepted from client\n");
+    //printf("Connection accepted from client\n");
 
-    printf("\n");
+    //printf("\n");
 
     return rdsocket;
 
@@ -142,11 +142,11 @@ int sock_open_in(int sock) {
 
     do{
 
-        printf("\n");
+        //printf("\n");
 
-        printf("Waiting on accept() \n");
+        //printf("Waiting on accept() \n");
 
-        printf("\n");
+        //printf("\n");
 
         rdsocket = accept(sock, &addr, &length);
         
@@ -158,9 +158,9 @@ int sock_open_in(int sock) {
         perror("No pude conectar el servidor");
     }
 
-    printf("Connection accepted from client\n");
+    //printf("Connection accepted from client\n");
 
-    printf("\n");
+    //printf("\n");
 
     return rdsocket;
 }
@@ -198,7 +198,7 @@ int sock_connect_un(char *sockadrr) {
 
         }
 
-    printf("Connected to the server \n");
+    //printf("Connected to the server \n");
 
     return sock;
 
@@ -240,7 +240,7 @@ int sock_connect_in(char *address, uint16_t port) {
             exit(EXIT_FAILURE);
         }
 
-    printf("Connected to the server \n");
+    //printf("Connected to the server \n");
 
     return sock;
 

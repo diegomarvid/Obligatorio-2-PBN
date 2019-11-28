@@ -32,7 +32,7 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
     //Elimina al Rp asociado de su lista.
     eliminar_nodo(lista_Rp, pid);
 
-    printf("[%d] Proceso Terminado con status %d \n", pid, status);
+    printf("[R] Se elimino Rp (%d)\n", pid);
 
 }
 
@@ -127,7 +127,6 @@ pid_t crear_Rp(int sockfd, int socket) {
     //Si estoy en el padre agrego el nuevo Rp a la lista.
     } else if(pid > 0){
 
-        printf("Creacion de R' exitosa, PID: %d \n", pid);
         agregar_nodo(lista_Rp, pid, -1);
         close(sockfd);
         

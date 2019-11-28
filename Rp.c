@@ -12,8 +12,6 @@ int main(int argc, char const *argv[])
     char buffer[ENTRADA_BUFFSIZE];
     char respuesta[RESPUESTA_BUFFSIZE];
 
-    printf("[Rp] Se creo un socket entre en el puerto: %d \n", PORT);
-
     //Obtengo el valor del socket que conecta a Rp con su consola.
     consola_socket = atoi(argv[1]);
    
@@ -33,8 +31,7 @@ int main(int argc, char const *argv[])
         MYERR(EXIT_FAILURE, "Error, no se pudo aceptar conexion. \n");
     }
 
-
-    printf("Connection established with MM \n");
+    printf("[Rp] Escuchando peticiones de consola (%d)\n", getpid());
 
     //*****Variables select*******//
 
@@ -76,8 +73,6 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con Consola\n");
             }
 
-            printf("[Rp] Recibe de consola: %s \n", buffer);
-
             //CONVIERTO A ESTRUCTURA INTERNA DEL SERVIDOR
 
             conv_to_struct(&mensaje, buffer);
@@ -92,8 +87,6 @@ int main(int argc, char const *argv[])
                 strcat(listener_addr, mensaje.data); //Address = /tmp/listener_2124
 
                 salida_fd = sock_connect_un(listener_addr);
-
-                printf("Fd de la socket: %d\n", salida_fd);
 
                 sscanf(mensaje.data, "%d", &pid);
 
@@ -136,9 +129,6 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con MM \n");
             }
 
-            printf("[Rp] Recibe de MM: %s con id %d \n", mensaje.data, mensaje.id);
-
-
             //*********MANDA A Consola***********//
             //Formatear mensaje para consola.
 
@@ -158,13 +148,10 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
             }
 
-            printf("[Rp]->[C] Manda: %s \n", respuesta);
-
         } else if( FD_ISSET(salida_fd, &readfds) ){
 
                 int w;    
-
-                //strcpy(salida_buffer, "");   
+ 
                 memset(salida_buffer, 0, OUT_BUFFSIZE); 
 
                 r = read(salida_fd, salida_buffer, RESPUESTA_BUFFSIZE - 2);
@@ -173,14 +160,12 @@ int main(int argc, char const *argv[])
                     perror("Error en la conexion con el listener");
                     salida_fd = -1;
                 } else if(r == END_OF_CONNECTION) {
-                    perror("Se termino de leer el proceso");
+                    //perror("Se termino de leer el proceso");
                     salida_fd = -1;
                 } else{
                     sprintf(respuesta, "%d-%s", ASINCRONICO, salida_buffer);
-                    printf("Respuesta mandada: %s\n", respuesta);
                     w = send(consola_socket, respuesta , r + 2 , MSG_NOSIGNAL);
 
-                    printf("Cantidad bytes recibidos: %d \nCantidad de bytes enviados: %d\n", r, w);
                 }
 
             

@@ -92,7 +92,6 @@ int main(int argc, char const *argv[])
                 proceso_vivo = FALSE;
             }
             else if (r == END_OF_CONNECTION){       
-                printf("[L] Se termino de escuchar el proceso (%s)\n", argv[1]);
                 proceso_vivo = FALSE;
                 cerrar_sockets();
                 pipe_fd = -1;
@@ -104,10 +103,7 @@ int main(int argc, char const *argv[])
                     socket_actual = monitored_fd_set[i];
 
                     if(socket_actual != connection_socket && socket_actual != pipe_fd && socket_actual != -1) {
-                        printf("Respuesta mandada: %s\n", buffer);
                         w = send(socket_actual, buffer, r, MSG_NOSIGNAL);
-                        printf("Cantidad bytes recibidos: %d \nCantidad de bytes enviados: %d\n", r, w);
-
                         if(w < 0) {
                             perror("Error en escritura de L");
                             remove_from_monitored_fd_set(socket_actual);
