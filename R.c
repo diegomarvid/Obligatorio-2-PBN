@@ -55,7 +55,7 @@ void sigTermHandler(int signum, siginfo_t *info, void *ucontext ) {
     sistema_cerrado = TRUE;
     close(connection_socket);
     connection_socket = -1;
-    printf("[R] Me llego el sig term papu\n");
+    printf("[R] Me estoy auto-eliminando...\n");
 
 }
 
@@ -101,9 +101,9 @@ void cerrar_proceso(pid_t pid, int tiempo) {
         
     } else if(estado == -1) {
         //Si SIGTERM anduvo da este error, deberia manejarlo distinto
-        perror("Error en waitpid WNOHANG \n");
+        printf("[R] Ya se elimino Rp (%d)\n", pid);
     } else {
-        printf("[R] Se cerro con exito \n");
+        printf("[R] Ya se elimino el proceso (%d) \n", pid);
     }
 
 
@@ -189,7 +189,7 @@ int main(int argc, char const *argv[])
 
             //----------Acepto conexion y derivo a Rp--------------//
 
-            printf("Esperando conexion..\n");
+            //printf("Esperando conexion..\n");
 
             int sock_Rp = sock_open_in(connection_socket);
 
@@ -203,7 +203,7 @@ int main(int argc, char const *argv[])
             }
         }
 
-        printf("No veo nueva conexion \n"); 
+       // printf("No veo nueva conexion \n"); 
         
 
     }

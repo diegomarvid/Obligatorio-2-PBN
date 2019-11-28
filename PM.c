@@ -262,17 +262,88 @@ void ejecutar_procesos(int mm_socket) {
     }
 }
 
+//-------------------------CERRAR PROCESOS---------------------------//
+//Dado el pid de un proceso cierra de forma correcta al mismo.
+void cerrar_proceso(pid_t pid, int tiempo) {
+
+    int status;
+    int estado = 0;
+
+    printf("[PM] Envio signal de terminate a %d \n", pid);
+    
+    if(kill(pid, SIGTERM) == -1) {
+        perror("Error en SIGTERM \n");
+    };
+
+    sleep(tiempo);
+
+    estado = waitpid(pid, &status, WNOHANG);
+
+    // sem_wait(sem);
+    // estado = lista_proceso[indice].estado;
+    // sem_post(sem);
+
+    // if(estado != ELIMINAR || estado != INVALIDO) {
+    //     if(kill(pid, SIGKILL) == -1) {
+    //         perror("Error en SIGTERM \n");
+    //     }
+
+    //     printf("[PM] Ya se elimino el proceso (%d)\n", pid);
+
+    // }
+
+    if(estado == 0) {
+        printf("[PM] Estas demorando mucho... \n");
+        printf("[PM] Envio signal de kill a %d \n", pid);
+
+        if(kill(pid, SIGKILL) == -1) {
+            perror("Error en SIGKILL \n");
+        }
+    }else if(estado == -1) {
+        //Si SIGTERM anduvo da este error, deberia manejarlo distinto
+        //perror("Error en waitpid WNOHANG \n");
+        printf("[PM] Ya se elimino el proceso (%d)\n", pid);
+    } else {
+        printf("[PM] Ya se elimino el proceso (%d)\n", pid);
+    }
+
+
+}
+
 
 void eliminar_procesos(void) {
+
+    Proceso p;
+    int i;
+
+    for(i = 0; i < PROCESS_MAX; i++) {
+
+        sem_wait(sem);
+        p = lista_proceso[i];
+        sem_post(sem);
+
+        if(p.estado != TERMINADO) {
+            cerrar_proceso(p.pid, 1);
+        }
+    }
+
     
 }
+
+
 
 //*******Funciones de signals********//
 
 void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
 
+    if(sistema_cerrado == TRUE) {
+        return;
+    }
+
     int status;
     pid_t pid;
+
+    
 
     pid = waitpid(-1, &status, 0);
 
@@ -294,14 +365,16 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
     sem_getvalue(sem,&semval);
 
 
-    printf("El semaforo tiene un valor:%d\n",semval);
+    //printf("El semaforo tiene un valor:%d\n",semval);
 
-    printf("[Signal] status: %d \n", status);
+    //printf("[Signal] status: %d \n", status);
 
     if(semval == 0){
         sem_post(sem);
         interrumpi_sem = TRUE;
     }
+
+    
 
     if(status == EXIT_SUCCESS) {
       cambiar_estado_proceso(pid, ELIMINAR);
@@ -318,7 +391,7 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
         sem_wait(sem);
     }
 
-    printf("El semaforo tiene un valor:%d\n",semval);
+   //printf("El semaforo tiene un valor:%d\n",semval);
 
 }
 
@@ -337,6 +410,7 @@ void sigChildSet() {
 void sigTermHandler(int signum, siginfo_t *info, void *ucontext) {
 
     sistema_cerrado = TRUE;
+    printf("[PM] Me estoy autoeliminando...\n");
 
 }
 
@@ -367,6 +441,7 @@ int main(int argc, char const *argv[])
 
     //Seteo interrupciones para Child
     sigChildSet();
+    sigTermSet();
 
     sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
 
@@ -384,6 +459,10 @@ int main(int argc, char const *argv[])
     ejecutar_procesos(mm_socket);
 
     eliminar_procesos();
+
+    sem_close(sem);
+    shmdt((void*)obtener_shm(0));
+    
 
 
     return 0;

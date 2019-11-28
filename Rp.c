@@ -74,9 +74,9 @@ void sigTermHandler(int signum, siginfo_t *info, void *ucontext ) {
 
     char buffer[RESPUESTA_BUFFSIZE] = "Se cerro el sistema.\n";
 
-    int w = send(consola_socket, buffer, strlen(buffer) + 1, MSG_NOSIGNAL);
+    send(consola_socket, buffer, strlen(buffer) + 1, MSG_NOSIGNAL);
 
-    printf("Le mando a consola %s con %d bytes\n", buffer, w);
+    printf("[Rp] Eliminando consola\n");
 
     close(mm_socket);
     close(consola_socket);

@@ -404,7 +404,7 @@ void cerrar_proceso(pid_t pid, int tiempo) {
     int status;
     int estado;
 
-    printf("[MM] Envio signal de terminate a %d \n", pid);
+    printf("*[MM] Envio signal de terminate a %d \n\n", pid);
     
 
     if(kill(pid, SIGTERM) == -1) {
@@ -426,9 +426,10 @@ void cerrar_proceso(pid_t pid, int tiempo) {
         
     } else if(estado == -1) {
         //Si SIGTERM anduvo da este error, deberia manejarlo distinto
-        perror("Error en waitpid WNOHANG \n");
+        //perror("Error en waitpid WNOHANG \n");
+        printf("\n*[MM] Ya se elimino el proceso (%d)\n\n", pid);
     } else {
-        printf("[MM] Se cerro con exito \n");
+        printf("\n*[MM] Ya se elimino el proceso (%d)\n\n", pid);
     }
 
 
@@ -443,6 +444,8 @@ void eliminar_sistema(void) {
     
     pid_t pid;
     int i;
+
+    printf("\n\n------ELIMINACION DEL SISTEMA------- \n\n");
 
     /*   Elimino R    */
 
@@ -460,7 +463,7 @@ void eliminar_sistema(void) {
     pid = procesos_sistema[1].pid;
     sem_post(sem);
 
-    cerrar_proceso(pid, 3);
+    cerrar_proceso(pid, 6);
 
     /* Cierro semaforos, Shm y sockets */
 
@@ -471,7 +474,7 @@ void eliminar_sistema(void) {
     //SHM
     int id = obtener_shm_id();
     shmdt(procesos_sistema);
-    shmctl (id, IPC_RMID, 0);
+    shmctl(id, IPC_RMID, 0);
 
     //Sockets
     for(i = 0; i < MAX_CLIENTS; i++){
