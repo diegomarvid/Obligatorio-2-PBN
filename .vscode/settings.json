@@ -1,6 +1,11 @@
 {
     "files.associations": {
         "constantes.h": "c",
-        "pm.h": "c"
+        "pm.h": "c",
+        "unistd.h": "c",
+        "stdlib.h": "c",
+        "signal.h": "c",
+        "string.h": "c",
+        "types.h": "c"
     }
 }

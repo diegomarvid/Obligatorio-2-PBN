@@ -1,12 +1,14 @@
 #ifndef RP_H
 #define RP_H
 
-//int conectarConsola(void);
+void conv_to_struct(Mensaje *mensaje, char buffer[]);
 
-//Mensaje convertirMensaje();
+void refresh_fd_set(fd_set *fd_set_ptr);
 
-//int enviar_tarea(Mensaje *mensaje); //Enviar informacion formateada a MM
+int get_max_fd();
 
-//char[] devolver_mensaje(void); //Devolver mensaje formateado a consola
+void sigTermHandler(int signum, siginfo_t *info, void *ucontext);
+
+void sigTermSet(void); 
 
 #endif
