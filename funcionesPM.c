@@ -15,12 +15,24 @@
 #include "shm.c"
 #include "sock.c"
 
-volatile Proceso *lista_proceso;
-volatile int sistema_cerrado = FALSE;
-sem_t *sem;
+
+//---------------------VARIABLES GLOBALES---------------------//
+
+volatile Proceso *lista_proceso; //Lista de shm
+volatile int sistema_cerrado = FALSE; //Estado del sistema
+sem_t *sem; //Semaforo
+
+
+//------------------------FUNCIONES---------------------------//
+
+
+//--------------------Manejo de SIGCHILD----------------------//
 
 void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
 
+
+    //Si el sistema se cerro el handler de muerte de hijo lo
+    //maneja la funcion de eliminar procesos
     if(sistema_cerrado == TRUE) {
         return;
     }
@@ -28,13 +40,13 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
     int status;
     pid_t pid;
 
-    
-
     pid = waitpid(-1, &status, 0);
 
     if(pid == FALLO) {
       printf("Fallo el waitpid \n");
     } else {
+
+        //---------Obtener direccion de la pipe para cerrarla-----------//
 
         char pipe_addr[100];          //Direccion para guardar el address de la pipe
         strcpy(pipe_addr, PIPE_ADDR); //Address = /tmp/pipe_
@@ -45,16 +57,24 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
         unlink(pipe_addr);
     }
 
+
+    //Se evalua si interrumpio un semaforo
+
     int semval;
     int interrumpi_sem = FALSE;
     sem_getvalue(sem,&semval);
 
-
+    //Si llega a la interrumpcion con semaforo en 0 es porque 
+    //interrumpio el semaforo, por eso se le incrementa 1
+    //para poder usar la shm dentro de la signal
     if(semval == 0){
         sem_post(sem);
         interrumpi_sem = TRUE;
     }
 
+
+    //Si termina mal el proceso se setea el estado a invalido
+    //Para despues mandar un mensaje de error y se elimina
     if(status == EXIT_SUCCESS) {
       cambiar_estado_proceso(pid, ELIMINAR);
     } else {
@@ -65,13 +85,20 @@ void sigChildHandler(int signum, siginfo_t *info, void *ucontext ) {
 
     sem_getvalue(sem,&semval);
 
+    //Si interrumpio y se uso la shm el semaforo
+    //debe volver a 0 para volver como estaba antes
+    //Por eso se le resta 1
     if(semval == 1 && interrumpi_sem) {
         sem_wait(sem);
     }
 
-   
-
 }
+
+//-----------------------------------------------------------//
+
+
+
+//--------------------Seteo de SIGCHILD----------------------//
 
 void sigChildSet(void) {
     struct sigaction action, oldaction;
@@ -85,6 +112,8 @@ void sigChildSet(void) {
     sigaction(SIGCHLD, &action, &oldaction);
 }
 
+//--------------------Manejo de SIGTERM----------------------//
+
 void sigTermHandler(int signum, siginfo_t *info, void *ucontext) {
 
     sistema_cerrado = TRUE;
@@ -92,6 +121,11 @@ void sigTermHandler(int signum, siginfo_t *info, void *ucontext) {
 
 }
 
+//----------------------------------------------------------//
+
+
+
+//--------------------Seteo de SIGTERM----------------------//
 
 void sigTermSet(void) {
     struct sigaction action, oldaction;
@@ -105,10 +139,18 @@ void sigTermSet(void) {
     sigaction(SIGTERM, &action, &oldaction);
 }
 
+//----------------------------------------------------------//
 
-/*  Funcion para separar un string en un array de string por un delimitador  */
+
+//-----------Separar un string por un delimitador en un array--------------//
 
 void str_split(char *build_string[], char string[], char *delim) {
+
+    //En build string se guarda el array de strings nuevo
+    //String es el string que se recorre para separarlo
+    //La funcion modifica string por eso se recomienda
+    //usar una copia para pasarle en string.
+
     char *token = strtok(string, delim);
     int length = 0;
 
@@ -121,9 +163,11 @@ void str_split(char *build_string[], char string[], char *delim) {
     build_string[length] = NULL;
 }
 
+//----------------------------------------------------------//
 
-//*****Funciones lista proceso******//
 
+
+//--------------Cambiar estado del proceso------------------//
 
 int cambiar_estado_proceso(pid_t pid, int estado) {
     Proceso p;
@@ -150,6 +194,12 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
     return FALLO;
 }
 
+//----------------------------------------------------------//
+
+
+
+//-------------------Crear name pipe------------------------//
+
 int crear_name_pipe(char *pipe_addr) {
 
     unlink(pipe_addr);
@@ -162,6 +212,13 @@ int crear_name_pipe(char *pipe_addr) {
 
 }
 
+//----------------------------------------------------------//
+
+
+
+//---------------------Crear listener-----------------------//
+
+
 void crear_listener(char *pid_str, int *L_pid) {
 
     *L_pid = fork();
@@ -173,7 +230,12 @@ void crear_listener(char *pid_str, int *L_pid) {
 
 }
 
+//----------------------------------------------------------//
 
+
+
+
+//---------------------Crear proceso------------------------//
 
 pid_t crear_proceso(char cmd[], int *L_pid) {
 
@@ -205,6 +267,8 @@ pid_t crear_proceso(char cmd[], int *L_pid) {
             return FALLO;
         }
 
+        //Le paso el pid en str para que sepa a donde conectarse
+        //Y guarda su pid en la variable L_pid
         crear_listener(pid_str, L_pid);
 
         if(*L_pid == FALLO) {
@@ -221,13 +285,13 @@ pid_t crear_proceso(char cmd[], int *L_pid) {
         sprintf(pid_str, "%d", getpid()); // Paso el pid a str para concatenarlo
         strcat(pipe_addr, pid_str); //Address = /tmp/pipe_2180
 
-        //Se abre como RDWR para que no tranque cuando no hay lectores
         int pipe_fd = open(pipe_addr, O_WRONLY);
 
         if(pipe_fd == FALLO) {
             MYERR(EXIT_FAILURE, "Error al abrir pipe para escritura");
         }
 
+        //Redirigir la salida estandar del proceso a la entrada de la pipe
         dup2(pipe_fd, STDOUT_FILENO);
     
         execvp(comando[0], &comando[0]);
@@ -240,12 +304,29 @@ pid_t crear_proceso(char cmd[], int *L_pid) {
 
 }
 
+//----------------------------------------------------------//
+
+
+
+
+//------------------Ejecutar procesos-------------------------//
+
+//Loop principal el cual ejecuta hasta que el sistema se cierre
 
 void ejecutar_procesos(int mm_socket) {
+
+    //Variable auxiliar para optimizar el acceso a shm
     Proceso p;
+
     int i;
+
+    //Pid del proceso a ejecutar/crear/eliminar/etc
     pid_t pid;
+
+    //Pid del listener del proceso anterior
     pid_t L_pid;
+
+    //Estructura mensaje para mandar a MM creacion del proceso
     Mensaje mensaje = {-1, -1, "", PM};
 
     while(!sistema_cerrado) {
@@ -256,7 +337,10 @@ void ejecutar_procesos(int mm_socket) {
             p = lista_proceso[i];
             sem_post(sem);
 
-            //CREAR PROCESO
+            
+
+            //-----------------CREAR PROCESO------------------------//
+
             //Se encarga de hacer fork y despues evaluar
             //y enviar un send a MM con el status de creacion
 
@@ -293,11 +377,15 @@ void ejecutar_procesos(int mm_socket) {
                 }
              }
 
+            //--------------------EJECUTAR PROCESO--------------------------//
+
             if(p.estado == EJECUTANDO) {
                 kill(p.pid, SIGCONT);
                 sleep(5);
                 kill(p.pid, SIGSTOP);
             }
+
+             //--------------------ELIMINAR PROCESO--------------------------//            
 
             if(p.estado == ELIMINAR) {
                 kill(p.LID, SIGKILL);              
@@ -336,6 +424,10 @@ void ejecutar_procesos(int mm_socket) {
     }
 }
 
+//-------------------------------------------------------------------//
+
+
+
 //-------------------------CERRAR PROCESOS---------------------------//
 //Dado el pid de un proceso cierra de forma correcta al mismo.
 void cerrar_proceso(pid_t pid, int tiempo) {
@@ -347,10 +439,11 @@ void cerrar_proceso(pid_t pid, int tiempo) {
     
     if(kill(pid, SIGTERM) == -1) {
         perror("Error en SIGTERM \n");
-    };
+    }
 
     sleep(tiempo);
 
+    //Si el hijo no cambio su estado en este tiempo devuelve 0
     estado = waitpid(pid, &status, WNOHANG);
 
     if(estado == 0) {
@@ -360,17 +453,22 @@ void cerrar_proceso(pid_t pid, int tiempo) {
         if(kill(pid, SIGKILL) == -1) {
             perror("Error en SIGKILL \n");
         }
-    }else if(estado == -1) {
-        //Si SIGTERM anduvo da este error, deberia manejarlo distinto
-        //perror("Error en waitpid WNOHANG \n");
-        printf("[PM] Ya se elimino el proceso (%d)\n", pid);
-    } else {
+
+
+    //Si no es cero devuelve el pid o error si no se encuentra el hijo
+    //De cualquier forma si llega aca es porque el proceso se elimino
+    }else{ 
         printf("[PM] Ya se elimino el proceso (%d)\n", pid);
     }
 
 
 }
 
+//---------------------------------------------------------------------//
+
+
+
+//------------------------Eliminar Procesos---------------------------//
 
 void eliminar_procesos(void) {
 
@@ -388,5 +486,6 @@ void eliminar_procesos(void) {
         }
     }
 
-    
 }
+
+//---------------------------------------------------------------------//

@@ -3,25 +3,26 @@
 
 int main(int argc, char const *argv[])
 {
-    
-    char sock_addr [100];
 
+    //-------Variables address socket/pipe-------//
+    char sock_addr [100];
     char pipe_addr[100];
 
-    char buffer[RESPUESTA_BUFFSIZE - 2];
-
+    //-----------Fd-------------//
     int connection_socket;
     int data_socket;
     int socket_actual;
-    //int rp_connections[MAX_CLIENTS];
 
+    //-----Buffer para leer y enviar salida del proceso-----//
+    char buffer[RESPUESTA_BUFFSIZE - 2];
+    
+    //---------Variables para el select y monitoreo---------//
     int proceso_vivo = TRUE;
-
     int i;
-
     fd_set readfds;
 
-    //strcpy(pid_addr, argv[1]);
+
+    //----------------SETEO ADDRESS-----------------//
 
     strcpy(sock_addr, L_ADDR); //sock_addr = /tmp/listener_
     strcpy(pipe_addr, PIPE_ADDR); //pipe_addr = /tmp/pipe_
@@ -29,10 +30,11 @@ int main(int argc, char const *argv[])
     strcat(sock_addr,argv[1]); //sock_addr = /tmp/listener_2048
     strcat(pipe_addr,argv[1]); //pipe_addr = /tmp/pipe_2048
 
+    //Inicializa array de fd para monitoreo en -1
     intitiaze_monitor_fd_set();
 
 
-    /*****CONEXION PIPE*****/
+    //----------------CONEXION PIPE----------------//
 
     int pipe_fd = open(pipe_addr, O_RDONLY);
     
@@ -40,7 +42,8 @@ int main(int argc, char const *argv[])
         MYERR(EXIT_FAILURE, "L no pudo acceder a la pipe");
     }
 
-    /*****CONEXION SOCKET*****/
+    //---------------CONEXION SOCKET---------------//
+
     unlink(sock_addr);
 
     //Master socket fd para aceptar conexiones
@@ -52,18 +55,29 @@ int main(int argc, char const *argv[])
 
     }
 
+    //Agregan fd al array para monitorear en el select
     add_to_monitored_fd_set(connection_socket);
     add_to_monitored_fd_set(pipe_fd);
 
+
+    //------------------LOOP SELECT------------------//
+
+    //Mientras el proceso a leer este vivo leo su
+    //salida y la mando a los Rp que quieren esucharla
+
+
     while(proceso_vivo) {
 
-        refresh_fd_set(&readfds);
 
-        //printf("Waiting on select sys call \n");
+        //Actualizo set de monitoreo para el select
+        refresh_fd_set(&readfds);
 
         select(get_max_fd() + 1, &readfds, NULL, NULL, NULL);
 
-        //Manejo el accept de un Rp para escuchar
+        
+
+        //------------Acepto nuevas conexiones------------//
+
         if(FD_ISSET(connection_socket, &readfds)){
 
 
@@ -76,12 +90,16 @@ int main(int argc, char const *argv[])
             add_to_monitored_fd_set(data_socket);
             
 
+        //-----------Envio salida a las conexiones----------//
+
         }else if(FD_ISSET(pipe_fd, &readfds)){
 
             int w;
             int r;
 
             memset(buffer, 0, RESPUESTA_BUFFSIZE - 2);
+
+            //-----------Leo salida del proceso------------//
 
             r = read(pipe_fd, buffer, RESPUESTA_BUFFSIZE - 2);
 
@@ -97,6 +115,8 @@ int main(int argc, char const *argv[])
                 pipe_fd = -1;
             }
             else{
+
+                //------Mando salida a los Rp conectados------//
 
                 for(i = 0; i < MAX_CLIENTS; i++){
 

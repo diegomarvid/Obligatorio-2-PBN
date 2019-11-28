@@ -1,9 +1,4 @@
-
 #include "funcionesPM.c"
-
-//*******Funciones de signals********//
-
-
 
 
 
@@ -11,12 +6,15 @@ int main(int argc, char const *argv[])
 {
 
 
-    //Seteo interrupciones para Child
+    //---------Iniciar interrumpciones-----------//
     sigChildSet();
     sigTermSet();
 
+    //-------------Iniciar semaforo--------------//
     sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
 
+
+    //----------Iniciar socket con MM------------//
     int mm_socket;
     mm_socket = sock_connect_un(SOCKET_NAME);
 
@@ -26,16 +24,22 @@ int main(int argc, char const *argv[])
 
     printf("[PM] Conexion exitosa con MM\n");
 
-    lista_proceso = obtener_shm(OFFSET);
 
+    //---------Obtener lista de procesos-------//
+    lista_proceso = obtener_shm(OFFSET);
+    
+    
+    //---------Loop principal de ejecucion-----------//
     ejecutar_procesos(mm_socket);
 
+
+    //-------------Eliminar procesos-----------------//
     eliminar_procesos();
 
+    //-------------Cerrar semaforo y shm-------------//
     sem_close(sem);
+    //Se le pasa donde empieza la shm para eliminarla
     shmdt((void*)obtener_shm(0));
     
-
-
     return 0;
 }

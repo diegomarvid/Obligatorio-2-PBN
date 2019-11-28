@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <error.h>
 #include <errno.h>
-#include <fcntl.h>           /* For O_* constants */
+#include <fcntl.h>           
 #include <sys/stat.h> 
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -16,42 +16,32 @@
 #include "shm.c"
 
 
+//----------------------VARIABLES GLOBALES------------------------//
 
+
+//---------Array de monitoreo de fd para el select----------//
 int monitored_fd_set[MAX_CLIENTS];
+
+//---------Lista de procesos para recorrer la shm-----------//
 Proceso *lista_proceso;
+
+//----------Semaforo----------//
 sem_t *sem;
+
+//----------Lista de fd con su RID asociado--------------//
 DynList *lista_fd;
+
+//----------Variable para evaluar la eliminacion del sistema---------//
 volatile int sistema_cerrado = FALSE;
+
+//---------Socket fd para aceptar conexiones-----------//
 int connection_socket;
 
-//--------------------------------Signals--------------------------------//
 
-// void sigIntHandler(int signum, siginfo_t *info, void *ucontext) {
-
-//     sistema_cerrado = TRUE;
-//     //close(connection_socket);
-//     //unlink(SOCKET_NAME);
-//     //connection_socket = -1;
-    
-// }
+//-----------------------FUNCIONES-----------------------------//
 
 
-// void sigIntSet() {
-//     struct sigaction action, oldaction;
-
-//     action.sa_sigaction = sigIntHandler; //Funcion a llamar
-//     sigemptyset(&action.sa_mask);
-//     sigfillset(&action.sa_mask); //Bloqueo todas la seniales
-//     action.sa_flags = SA_SIGINFO;
-//     action.sa_restorer = NULL;
-
-//     sigaction(SIGINT, &action, &oldaction);
-// }
-
-//-------------------------------------------------------------------------//
-
-
-/*Remove all the FDs, if any, from the the array*/
+//----------Inicializar array de monitoreo en -1--------------//
 void intitiaze_monitor_fd_set(void){
 
     int i;
@@ -61,8 +51,11 @@ void intitiaze_monitor_fd_set(void){
     }
 }
 
+//-------------------------------------------------------------//
 
-/*Add a new FD to the monitored_fd_set array*/
+
+
+//---------------Agrega fd en posicion libre------------------//
 void add_to_monitored_fd_set(int skt_fd){
 
     int i = 0;
@@ -76,8 +69,12 @@ void add_to_monitored_fd_set(int skt_fd){
     }
 }
 
+//------------------------------------------------------------//
 
-/*Remove the FD from monitored_fd_set array*/
+
+
+
+//-----------------Eliminar fd de la lista--------------------//
 void remove_from_monitored_fd_set(int skt_fd){
 
     int i = 0;
@@ -92,9 +89,11 @@ void remove_from_monitored_fd_set(int skt_fd){
 }
 
 
-/*Get the numerical max value among all FDs which server
- * is monitoring*/
+//------------------------------------------------------------//
 
+
+
+//------------------Obtener maximo del array------------------//
 int get_max_fd(){
 
     int i;
@@ -113,8 +112,11 @@ int get_max_fd(){
 }
 
 
-/* Clone all the FDs in monitored_fd_set array into
- * fd_set Data structure*/
+//------------------------------------------------------------//
+
+
+
+//---------------Actualizar set de monitero-------------------//
 void refresh_fd_set(fd_set *fd_set_ptr){
 
     FD_ZERO(fd_set_ptr);
@@ -131,7 +133,12 @@ void refresh_fd_set(fd_set *fd_set_ptr){
     }
 }
 
-//*******SHM CODE********//
+
+//------------------------------------------------------------//
+
+
+
+//--------------Obtener espacio libre de SHM------------------//
 
 int request_process_space(void) {
 
@@ -151,6 +158,12 @@ int request_process_space(void) {
 
 }
 
+//------------------------------------------------------------//
+
+
+
+//--------------Obtener estado de proceso en shm--------------//
+
 int obtener_estado(pid_t pid) {
 
   Proceso p;  
@@ -169,6 +182,12 @@ int obtener_estado(pid_t pid) {
 
   return INVALIDO;
 }
+
+//------------------------------------------------------------//
+
+
+
+//--------------Agregar proceso para crear--------------------//
 
 int agregar_proceso(char cmd[], int RID){
 
@@ -194,6 +213,12 @@ int agregar_proceso(char cmd[], int RID){
     }
 
 }
+
+//------------------------------------------------------------//
+
+
+
+//----------------Cambiar estado de proceso-------------------//
 
 int cambiar_estado_proceso(pid_t pid, int estado) {
 
@@ -223,6 +248,12 @@ int cambiar_estado_proceso(pid_t pid, int estado) {
 
 }
 
+//------------------------------------------------------------//
+
+
+
+//---------------Formatear estado a string--------------------//
+
 void formatear_estado(Mensaje *mensaje, pid_t pid, int estado) {
 
 
@@ -239,6 +270,12 @@ void formatear_estado(Mensaje *mensaje, pid_t pid, int estado) {
     mensaje->id = MM;
 
 }
+
+//------------------------------------------------------------//
+
+
+
+//-----------------Obtener lista dado RID---------------------//
 
 void obtener_lista(Mensaje *mensaje){
 
@@ -274,7 +311,11 @@ void obtener_lista(Mensaje *mensaje){
     mensaje->id = MM;
 }
 
+//------------------------------------------------------------//
 
+
+
+//--------------Ejecutar todas las operaciones----------------//
 
 void ejecutar_operacion(Mensaje *mensaje, int socket_actual) {
 
@@ -344,10 +385,15 @@ void ejecutar_operacion(Mensaje *mensaje, int socket_actual) {
     }
 }
 
+//------------------------------------------------------------//
+
+
+
+//--------------INICIALIZACION DEL SISTEMA--------------------//
 
 void iniciar_sistema(int connection_socket) {
 
-    /*  Crear SHM  */
+    //--------------Crear shm----------------//
 
     if(remove(SHM_ADDR) == FALLO) {
         printf("Archivo no estaba creado \n");
@@ -361,15 +407,21 @@ void iniciar_sistema(int connection_socket) {
         MYERR(EXIT_FAILURE, "Error en la creacion de shm");
     }
 
+    //-----------Obtener puntero shm------------//
+
     Proceso *procesos_sistema = obtener_shm(0);
 
-    //Guardo MM en la primera posicion
+    //-------------Crear semaforo-----------//
+    sem_unlink(SEM_ADDR);    
+    sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
+
+    //---------Guardar estructura en shm----------//
     procesos_sistema[0].pid = getpid();
     procesos_sistema[0].RID = INVALIDO;
     procesos_sistema[0].LID = INVALIDO;
     strcpy(procesos_sistema[0].cmd, "MM");
 
-    /* Creo PM */
+    //------------Crear PM------------//
 
     pid_t pm_pid = fork();
 
@@ -391,13 +443,15 @@ void iniciar_sistema(int connection_socket) {
 
     sleep(2);
 
-    //Guardo PM en la memoria compartida
+    //---------Guardar estructura en shm----------//
+    sem_wait(sem);
     procesos_sistema[1].pid = pm_pid;
     procesos_sistema[1].RID = INVALIDO;
     procesos_sistema[1].LID = INVALIDO;
     strcpy(procesos_sistema[1].cmd, "PM");
+    sem_post(sem);
 
-     /* Creo R */
+    //------------Crear R------------//
 
     pid_t r_pid = fork();
 
@@ -413,15 +467,22 @@ void iniciar_sistema(int connection_socket) {
 
     }
 
-    //Guardo R en la memoria compartida
+    //---------Guardar estructura en shm----------//
+    sem_wait(sem);
     procesos_sistema[2].pid = r_pid;
     procesos_sistema[2].RID = INVALIDO;
     procesos_sistema[2].LID = INVALIDO;
     strcpy(procesos_sistema[2].cmd, "R");
+    sem_post(sem);
 
 
 
 }
+//------------------------------------------------------------//
+
+
+
+//--------------------Cerrar proceso--------------------------//
 
 void cerrar_proceso(pid_t pid, int tiempo) {
 
@@ -460,6 +521,11 @@ void cerrar_proceso(pid_t pid, int tiempo) {
 
 }
 
+//------------------------------------------------------------//
+
+
+//--------------Eliminar lista dinamica de Rp-----------------//
+
 void cerrar_lista_fd(void) {
 
     printf("[R] Cerrando Rp...\n");
@@ -479,9 +545,15 @@ void cerrar_lista_fd(void) {
 
 }
 
+//------------------------------------------------------------//
+
+
+//--------------------ELIMINAR SISTEMA------------------------//
 
 void eliminar_sistema(void) {
 
+
+    //Obtiene puntero a shm para recorrer los procesos del sistema
     Proceso *procesos_sistema = obtener_shm(0);
 
     
@@ -490,7 +562,7 @@ void eliminar_sistema(void) {
 
     printf("\n\n------ELIMINACION DEL SISTEMA------- \n\n");
 
-    /*   Elimino R    */
+    //---------------Eliminar R--------------//
 
     //Obtengo pid de R
     sem_wait(sem);
@@ -499,7 +571,7 @@ void eliminar_sistema(void) {
 
     cerrar_proceso(pid, 4);
 
-    /*   Elimino PM    */
+    //---------------Eliminar PM--------------//
 
     //Obtengo pid de PM
     sem_wait(sem);
@@ -508,7 +580,7 @@ void eliminar_sistema(void) {
 
     cerrar_proceso(pid, 6);
 
-    /* Cierro semaforos, Shm y sockets */
+    //---------------Eliminar Semaforo, sockets y shm--------------//
 
     //Semaforo
     sem_close(sem);
@@ -529,5 +601,6 @@ void eliminar_sistema(void) {
     unlink(SOCKET_NAME); 
     
 
-
 }
+
+//------------------------------------------------------------//

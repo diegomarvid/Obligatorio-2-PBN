@@ -9,16 +9,11 @@
 #include "constantes.h"
 #include "shm.h"
 
-sem_t *sem;
+
+//--------------------Inicializar shm----------------------//
 
 void inicializar_shm(Proceso *lista_proceso) {
     
-    sem_unlink(SEM_ADDR);
-    sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
-
-    if(sem == SEM_FAILED) {
-        perror("Error en el semaforo");
-    }
 
     //p[i] = *(p + i)
 
@@ -26,24 +21,27 @@ void inicializar_shm(Proceso *lista_proceso) {
 
     for(i = 0; i < TOTAL_PROCESS; i++) {
 
-        sem_wait(sem);
         lista_proceso[i].RID = INVALIDO;
         lista_proceso[i].LID = TERMINADO;
         lista_proceso[i].pid = INVALIDO;
         lista_proceso[i].estado = TERMINADO;
         
-
-        if(i < 3) {
+        if(i < OFFSET) {
             strcpy(lista_proceso[i].cmd, "Proceso del sistema");
         } else {
             strcpy(lista_proceso[i].cmd, "Proceso del cliente");
         }
-        sem_post(sem);
 
     }
 
 
 }
+
+//-----------------------------------------------------------//
+
+
+
+//-----------------------Crear shm---------------------------//
 
 
 int crear_shm() {
@@ -81,6 +79,12 @@ int crear_shm() {
 
 }
 
+//-----------------------------------------------------------//
+
+
+
+//----------------------Obtener id---------------------------//
+
 int obtener_shm_id() {
 
     key_t key = ftok(SHM_ADDR, PROJ_ID);
@@ -93,6 +97,10 @@ int obtener_shm_id() {
 
 }
 
+//-----------------------------------------------------------//
+
+
+//----------------Obtener puntero shm------------------------//
 
 Proceso *obtener_shm(int offset) {
 
@@ -118,3 +126,5 @@ Proceso *obtener_shm(int offset) {
 
 
 }
+
+//-----------------------------------------------------------//

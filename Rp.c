@@ -4,25 +4,25 @@
 int main(int argc, char const *argv[])
 {
 
+
+    //----------Iniciar interrumpciones----------//
     sigTermSet();
 
-    //Creo socket
-    //int socket = sock_listen(PORT);
-
+    //---------Buffer para comunicacion por socket-------//
     char buffer[ENTRADA_BUFFSIZE];
     char respuesta[RESPUESTA_BUFFSIZE];
+    char salida_buffer[RESPUESTA_BUFFSIZE - 2];
 
-    //Obtengo el valor del socket que conecta a Rp con su consola.
+    //--------Obtener socket con consola------------//
     consola_socket = atoi(argv[1]);
    
 
-    //Inicializo la estructura mensaje con valores default.
+    //----------Inicializar estructura mensaje con valores default------------//
     Mensaje mensaje = {getpid(), -1, "", RP};
 
-    //Conecto a Rp con MM.
+    //--------Conectar con MM-----------//
     mm_socket = sock_connect_un(SOCKET_NAME);
 
-    //Manejo de error en conexion con MM
     if( mm_socket == 0 ){
         close(mm_socket);
         MYERR(EXIT_FAILURE, "MM se desconecto \n");
@@ -33,7 +33,7 @@ int main(int argc, char const *argv[])
 
     printf("[Rp] Escuchando peticiones de consola (%d)\n", getpid());
 
-    //*****Variables select*******//
+    //--------Variables select---------//
 
     //Guardo fd en el array para el select
     monitored_fd_set[0] = consola_socket;
@@ -42,11 +42,13 @@ int main(int argc, char const *argv[])
 
 
 
-    //******Variables socket******/
-    
+    //-----Variables auxiliares------//
     int r;
-    char salida_buffer[RESPUESTA_BUFFSIZE - 2];
+    int w;
     int pid;
+
+
+    //----------------LOOP PRINCIPAL-----------------//
 
     while(TRUE) {
 
@@ -56,10 +58,12 @@ int main(int argc, char const *argv[])
         //Realizo un select el cual nos permite saber si usuario desea realizar una accion o MM nos envia resultados.
         select(get_max_fd() + 1, &readfds, NULL, NULL, NULL);
 
+
+        //------------------PETICION DE CONSOLA--------------------//
+
         if(FD_ISSET(consola_socket, &readfds)) {
 
-            //*********RECIBE CONSOLA********//
-
+            //Leo lo recibido por consola
             r = recv(consola_socket, buffer, ENTRADA_BUFFSIZE, 0);
 
             if (r == ERROR_CONNECTION){
@@ -73,12 +77,12 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con Consola\n");
             }
 
-            //CONVIERTO A ESTRUCTURA INTERNA DEL SERVIDOR
+            //Convierto buffer a estructura interna del servidor
 
             conv_to_struct(&mensaje, buffer);
 
-            //Diferenciar si se quiere enganchar a la salida de otro proceso
-
+            
+            //------------Diferenciar si se engancha a una salida---------------//
             if(mensaje.op == LEER_SALIDA) {
 
                 //En mensaje.data esta el pid en formato string
@@ -90,6 +94,7 @@ int main(int argc, char const *argv[])
 
                 sscanf(mensaje.data, "%d", &pid);
 
+                //Mando un mensaje sincronico de si se pudo o no engancharse a la salida del proceso
                 
                 if(salida_fd == FALLO) {
                     sprintf(salida_buffer, "[%d] %s", pid, "No se encontro el proceso\n");
@@ -99,13 +104,19 @@ int main(int argc, char const *argv[])
 
                 sprintf(respuesta, "%d-%s", SINCRONICO, salida_buffer);
 
-                send(consola_socket, respuesta, sizeof(respuesta) + 1, MSG_NOSIGNAL);
+                if(send(consola_socket, respuesta, sizeof(respuesta) + 1, MSG_NOSIGNAL) < 0) {
+                    printf("Error enviando salida del proceso\n");
+                }
 
+                //Agrego el fd a la lista para monitorear por el select
                 monitored_fd_set[2] = salida_fd;
 
             } else{
 
-                //*********MANDA A MM***********//
+                //------------------ENVIA A MM--------------------//
+
+                //Si recibe de consola y no es engancharse a una salida
+                //Rp envia el mensaje a MM
 
                 if (send(mm_socket, &mensaje, sizeof(mensaje), MSG_NOSIGNAL) <= 0){
                     close(mm_socket);
@@ -113,11 +124,12 @@ int main(int argc, char const *argv[])
                 }
 
             }
+
+        //-----------------RECIBO RESPUESTA DE MM---------------------//
+
         } else if(FD_ISSET(mm_socket, &readfds)) {
 
-            //*********RECIBE DE MM***********//
-            //Rebice mensaje y lo formatea.
-
+            //Leo mensaje recibido
             r = recv(mm_socket, &mensaje, sizeof(mensaje), 0);
 
             if (r == ERROR_CONNECTION){
@@ -129,40 +141,47 @@ int main(int argc, char const *argv[])
                 MYERR(EXIT_FAILURE, "[Rp] Conexion finalizada con MM \n");
             }
 
-            //*********MANDA A Consola***********//
-            //Formatear mensaje para consola.
-
-            //A Rp le llega de la forma PID-RESPUESTA_STR
             strcpy(respuesta, "");
 
+            //Si el mensaje que llega de MM lo creo el entonces el id es MM
+            //y el mensaje es sicrono.
+            //Si el mensaje que llega de MM lo creo PM entonces el id es PM
+            //y el mensaje es asicrono.
+
+            //Concateno tipo de comunicacion a la respuesta de MM
             if(mensaje.id == MM){
                 sprintf(respuesta, "%d-%s", SINCRONICO, mensaje.data);
             }else if (mensaje.id == PM){
                 sprintf(respuesta, "%d-%s", ASINCRONICO, mensaje.data);
             }
 
-            //printf("%s\n",buffer);
-
+            //Envio respuesta a consola
             if (send(consola_socket, respuesta, strlen(respuesta) + 1, MSG_NOSIGNAL) <= 0){
                 close(consola_socket);
                 MYERR(EXIT_FAILURE, "[Rp] Error en el send \n");
             }
 
+        //---------------------RECIBO SALIDA DE PROCESO---------------------//    
+
         } else if( FD_ISSET(salida_fd, &readfds) ){
 
-                int w;    
- 
+                //Limpio el buffer
                 memset(salida_buffer, 0, OUT_BUFFSIZE); 
 
+                //Leo lo que llega
                 r = read(salida_fd, salida_buffer, RESPUESTA_BUFFSIZE - 2);
 
                 if(r == ERROR_CONNECTION) {
                     perror("Error en la conexion con el listener");
                     salida_fd = -1;
                 } else if(r == END_OF_CONNECTION) {
-                    //perror("Se termino de leer el proceso");
+                    //Si termina de leer el proceso seteo fd a -1 asi no entra
+                    //al select
                     salida_fd = -1;
                 } else{
+
+                    //Si el mensaje no tiene error concateno tipo de comunicacion
+                    //y lo envio a consola
                     sprintf(respuesta, "%d-%s", ASINCRONICO, salida_buffer);
                     w = send(consola_socket, respuesta , r + 2 , MSG_NOSIGNAL);
 
