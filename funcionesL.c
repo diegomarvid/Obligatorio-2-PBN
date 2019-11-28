@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <error.h>
 #include <errno.h>
 #include <fcntl.h> // para el mkfifo
@@ -9,6 +10,10 @@
 #include <sys/types.h>// para el mkfifo
 #include "constantes.h"
 #include "sock.c"
+
+
+
+
 
 int monitored_fd_set[MAX_CLIENTS];
 
@@ -101,3 +106,30 @@ void cerrar_sockets(void){
             }
         } 
 }
+
+//---------------------------Handler de Terminacion-------------------------------//
+
+void sigTermHandler(int signum, siginfo_t *info, void *ucontext) {
+
+   cerrar_sockets();
+   
+   exit(EXIT_SUCCESS); 
+
+}
+
+//--------------------------------------------------------------------------------//
+
+//--------------------------Set del manejador de Terminacion----------------------//
+void sigTermSet(void) {
+    struct sigaction action, oldaction;
+
+    action.sa_sigaction = sigTermHandler; //Funcion a llamar
+    sigemptyset(&action.sa_mask);
+    sigfillset(&action.sa_mask); //Bloqueo todas la seniales
+    action.sa_flags =  SA_SIGINFO;
+    action.sa_restorer = NULL;
+
+    sigaction(SIGTERM, &action, &oldaction);
+}
+
+//--------------------------------------------------------------------------------//

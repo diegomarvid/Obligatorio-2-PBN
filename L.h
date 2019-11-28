@@ -13,4 +13,8 @@ void refresh_fd_set(fd_set *fd_set_ptr);
 
 void cerrar_sockets(void);
 
+void sigTermHandler(int signum, siginfo_t *info, void *ucontext);
+
+void sigTermSet(void);
+
 #endif

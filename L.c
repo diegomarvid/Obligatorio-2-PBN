@@ -59,6 +59,9 @@ int main(int argc, char const *argv[])
     add_to_monitored_fd_set(connection_socket);
     add_to_monitored_fd_set(pipe_fd);
 
+    //--------------SET INTERRUMPCION----------------//
+    sigTermSet();
+
 
     //------------------LOOP SELECT------------------//
 

@@ -430,16 +430,20 @@ void ejecutar_procesos(int mm_socket) {
 
 //-------------------------CERRAR PROCESOS---------------------------//
 //Dado el pid de un proceso cierra de forma correcta al mismo.
-void cerrar_proceso(pid_t pid, int tiempo) {
+void cerrar_proceso(pid_t pid, int tiempo, pid_t LID) {
 
     int status;
     int estado = 0;
 
     printf("[PM] Envio signal de terminate a %d \n", pid);
     
+    //Mando signal de terminacion al proceso
     if(kill(pid, SIGTERM) == -1) {
         perror("Error en SIGTERM \n");
     }
+
+    //Mando signal de terminacion a su listener
+    kill(LID, SIGTERM);
 
     sleep(tiempo);
 
@@ -453,12 +457,13 @@ void cerrar_proceso(pid_t pid, int tiempo) {
         if(kill(pid, SIGKILL) == -1) {
             perror("Error en SIGKILL \n");
         }
+        kill(LID, SIGKILL);
 
 
     //Si no es cero devuelve el pid o error si no se encuentra el hijo
     //De cualquier forma si llega aca es porque el proceso se elimino
     }else{ 
-        printf("[PM] Ya se elimino el proceso (%d)\n", pid);
+        printf("[PM] Ya se elimino el proceso (%d) y (%d)\n", pid, LID);
     }
 
 
@@ -482,7 +487,7 @@ void eliminar_procesos(void) {
         sem_post(sem);
 
         if(p.estado != TERMINADO) {
-            cerrar_proceso(p.pid, 1);
+            cerrar_proceso(p.pid, 1, p.LID);
         }
     }
 

@@ -21,7 +21,7 @@ pid_t crear_proceso(char cmd[], int *L_pid);
 
 void ejecutar_procesos(int mm_socket);
 
-void cerrar_proceso(pid_t pid, int tiempo);
+void cerrar_proceso(pid_t pid, int tiempo, pid_t LID);
 
 void eliminar_procesos(void);
 
