@@ -13,6 +13,7 @@ int main(int argc, char const *argv[])
     //Inicializo la lista de los Rp.
     lista_Rp = dynList_crear();
 
+
     //Creo un socket para conectar a las consolas con el sistema.
     connection_socket = sock_listen_in(PORT); 
 
@@ -50,6 +51,7 @@ int main(int argc, char const *argv[])
     cerrar_lista_Rp();
 
     close(connection_socket);
+
 
     return 0;
 }

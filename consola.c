@@ -96,9 +96,11 @@ int main(int argc,char *argv[]){
 				//printf("Cantidad de bytes recibidos: %d\n", r);
 
 				if(r == ERROR_CONNECTION) {
+					shutdown(socket, SHUT_RDWR);
 					close(socket);
 					MYERR(EXIT_FAILURE, "Se cayo el servidor.");
 				} else if(r == END_OF_CONNECTION) {
+					shutdown(socket, SHUT_RDWR);
 					close(socket);
 					MYERR(EXIT_FAILURE, "Se termino la conexion con el servidor");
 				}

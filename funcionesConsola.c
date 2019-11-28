@@ -178,7 +178,7 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 		MYERR(EXIT_FAILURE, "[C] Error en el send \n");
 	}
 
-	printf("[C]->[Rp] Manda: %s \n", mensaje);
+	//printf("[C]->[Rp] Manda: %s \n", mensaje);
 
 
 	//Recibe mensajes del servidor hasta que llegue el resultado de la tarea.
@@ -202,7 +202,7 @@ void transimitir_mensaje(int sockfd, char mensaje[], char respuesta[]) {
 
 		//Si es la respuesta de la operacion la muestro en pantalla con su formato.
 		if(comunicacion == SINCRONICO){
-			printf("[Rp]->[C] Recibe: %s\n", respuesta);
+			printf("\n%s\n", respuesta);
 		}
 		//Si es errores en procesos creados por la terminal lo muestro en pantalla con su formato.
 		else if (comunicacion == ASINCRONICO){

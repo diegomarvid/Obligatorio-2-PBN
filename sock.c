@@ -67,17 +67,21 @@ int sock_listen_in(uint16_t port){
 
     sock = socket(PF_INET, SOCK_STREAM, 0);
 
-        if(sock < 0) {
+    if(sock < 0) {
 
-            perror("socket");
-            exit(EXIT_FAILURE);
+        perror("socket");
+        exit(EXIT_FAILURE);
 
-        }
+    }
 
-         /* Give the socket a name */
-        name.sin_family = AF_INET;
-        name.sin_port = htons(port);
-        name.sin_addr.s_addr = htonl(INADDR_ANY);
+    /* Give the socket a name */
+    name.sin_family = AF_INET;
+    name.sin_port = htons(port);
+    name.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    //Unbind socket
+    int verdadero = 1;
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &verdadero, sizeof(int));
     
 
     /* Do the binding */

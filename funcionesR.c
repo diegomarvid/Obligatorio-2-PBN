@@ -108,7 +108,7 @@ void cerrar_proceso(pid_t pid, int tiempo) {
         printf("[R] Ya se elimino el proceso (%d) \n", pid);
     }
 
-
+    
 
 }
 
@@ -154,11 +154,17 @@ void cerrar_lista_Rp(void) {
     printf("[R] Cerrando Rp...\n");
 
     Nodo *actual = lista_Rp->head;
+    Nodo *aux = actual;
     
     while(actual != NULL){   
         cerrar_proceso(actual->data, 2);
+        aux = actual;
         actual = actual->next;
+        free(aux);
     }
 
+    //Despues de eliminar todos los nodos se elimina el espacio
+    //de memoria de la lista
+    free(lista_Rp);
 
 }

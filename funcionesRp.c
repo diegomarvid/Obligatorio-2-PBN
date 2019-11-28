@@ -78,6 +78,7 @@ void sigTermHandler(int signum, siginfo_t *info, void *ucontext) {
     printf("[Rp] Eliminando consola\n");
 
     close(mm_socket);
+    shutdown(consola_socket, SHUT_RDWR);
     close(consola_socket);
     close(salida_fd);
 

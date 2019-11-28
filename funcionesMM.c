@@ -22,6 +22,33 @@ Proceso *lista_proceso;
 sem_t *sem;
 DynList *lista_fd;
 volatile int sistema_cerrado = FALSE;
+int connection_socket;
+
+//--------------------------------Signals--------------------------------//
+
+// void sigIntHandler(int signum, siginfo_t *info, void *ucontext) {
+
+//     sistema_cerrado = TRUE;
+//     //close(connection_socket);
+//     //unlink(SOCKET_NAME);
+//     //connection_socket = -1;
+    
+// }
+
+
+// void sigIntSet() {
+//     struct sigaction action, oldaction;
+
+//     action.sa_sigaction = sigIntHandler; //Funcion a llamar
+//     sigemptyset(&action.sa_mask);
+//     sigfillset(&action.sa_mask); //Bloqueo todas la seniales
+//     action.sa_flags = SA_SIGINFO;
+//     action.sa_restorer = NULL;
+
+//     sigaction(SIGINT, &action, &oldaction);
+// }
+
+//-------------------------------------------------------------------------//
 
 
 /*Remove all the FDs, if any, from the the array*/
@@ -428,6 +455,25 @@ void cerrar_proceso(pid_t pid, int tiempo) {
     }
 
 
+
+}
+
+void cerrar_lista_fd(void) {
+
+    printf("[R] Cerrando Rp...\n");
+
+    Nodo *actual = lista_fd->head;
+    Nodo *aux = actual;
+    
+    while(actual != NULL){   
+        aux = actual;
+        actual = actual->next;
+        free(aux);
+    }
+
+    //Despues de eliminar todos los nodos se elimina el espacio
+    //de memoria de la lista
+    free(lista_fd);
 
 }
 

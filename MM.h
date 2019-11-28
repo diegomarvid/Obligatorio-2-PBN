@@ -29,6 +29,8 @@ void iniciar_sistema(int connection_socket);
 
 void cerrar_proceso(pid_t pid, int tiempo);
 
+void cerrar_lista_fd(void);
+
 void eliminar_sistema(void);
 
 #endif
