@@ -316,6 +316,82 @@ void ejecutar_operacion(Mensaje *mensaje, int socket_actual) {
 }
 
 
+void iniciar_sistema(int connection_socket) {
+
+    /*  Crear SHM  */
+
+    if(remove(SHM_ADDR) == FALLO) {
+        printf("Archivo no estaba creado \n");
+    }
+
+     if(fopen(SHM_ADDR, "w") ==  NULL) {
+         MYERR(EXIT_FAILURE, "Error en la creacion del archivo de shm");
+     }
+    
+    if(crear_shm() == FALLO){
+        MYERR(EXIT_FAILURE, "Error en la creacion de shm");
+    }
+
+    Proceso *procesos_sistema = obtener_shm(0);
+
+    //Guardo MM en la primera posicion
+    procesos_sistema[0].pid = getpid();
+    procesos_sistema[0].RID = INVALIDO;
+    procesos_sistema[0].LID = INVALIDO;
+    strcpy(procesos_sistema[0].cmd, "MM");
+
+    /* Creo PM */
+
+    pid_t pm_pid = fork();
+
+    if(pm_pid == FALLO) {
+        perror("Error al crear PM");
+    } else if(pm_pid == 0) {
+
+        //Cierro los sockets de MM
+        close(connection_socket);
+
+        //Tiempo para que MM se ejecute y abra conexiones para esperar
+        sleep(2);
+
+        execlp("./PM", "PM", NULL);
+
+        MYERR(EXIT_FAILURE, "Error al ejecutar PM");
+
+    }
+
+    //Guardo PM en la memoria compartida
+    procesos_sistema[1].pid = pm_pid;
+    procesos_sistema[1].RID = INVALIDO;
+    procesos_sistema[1].LID = INVALIDO;
+    strcpy(procesos_sistema[1].cmd, "PM");
+
+     /* Creo R */
+
+    pid_t r_pid = fork();
+
+    if(r_pid == FALLO) {
+        perror("Error al crear R");
+    } else if(r_pid == 0) {
+
+        //Cierro los sockets de MM
+        close(connection_socket);
+        execlp("./R", "R", NULL);
+
+        MYERR(EXIT_FAILURE, "Error al ejecutar R");
+
+    }
+
+    //Guardo R en la memoria compartida
+    procesos_sistema[2].pid = r_pid;
+    procesos_sistema[2].RID = INVALIDO;
+    procesos_sistema[2].LID = INVALIDO;
+    strcpy(procesos_sistema[2].cmd, "R");
+
+
+
+}
+
 
 int main(int argc, char const *argv[]){
 
@@ -332,13 +408,6 @@ int main(int argc, char const *argv[]){
     //Nodo para utilizar dynlist de fd y RID
     Nodo *nodo_fd;
 
-    sem_unlink(SEM_ADDR);    
-    sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
-
-
-
-    lista_proceso = obtener_shm(OFFSET);
-
     intitiaze_monitor_fd_set();
 
     //Lista dinamica para guardar cada Rp con su RID y fd asociado
@@ -349,6 +418,17 @@ int main(int argc, char const *argv[]){
 
     //Master socket fd para aceptar conexiones
     connection_socket = sock_listen_un();
+
+    iniciar_sistema(connection_socket);
+
+    //Crear semaforo
+    sem_unlink(SEM_ADDR);    
+    sem = sem_open(SEM_ADDR, O_CREAT, 0666, 1);
+
+
+    //Obtener SHM
+    lista_proceso = obtener_shm(OFFSET);
+
 
 
 
